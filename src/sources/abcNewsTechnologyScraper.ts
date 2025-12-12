@@ -25,7 +25,6 @@ export async function scrapeABCNewsTechnologyHomepage(
 ): Promise<ABCNewsTechnologyArticleItem[]> {
   const abcNewsTechnologyUrl = "https://abcnews.go.com/Technology";
 
-  logger.info("Fetching ABC News Technology page...", { url: abcNewsTechnologyUrl });
   const response = await axios.get(abcNewsTechnologyUrl);
   const html = response.data;
   const $ = cheerio.load(html);
@@ -167,11 +166,6 @@ export async function scrapeABCNewsTechnologyHomepage(
       items.push({ title, url, imageUrl });
     });
   }
-
-  logger.info("Scraped ABC News Technology items", {
-    count: items.length,
-    limit: limit,
-  });
 
   return items.slice(0, limit);
 }

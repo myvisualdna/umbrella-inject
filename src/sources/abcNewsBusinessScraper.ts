@@ -25,7 +25,6 @@ export async function scrapeABCNewsBusinessHomepage(
 ): Promise<ABCNewsBusinessArticleItem[]> {
   const abcNewsBusinessUrl = "https://abcnews.go.com/Business";
 
-  logger.info("Fetching ABC News Business page...", { url: abcNewsBusinessUrl });
   const response = await axios.get(abcNewsBusinessUrl);
   const html = response.data;
   const $ = cheerio.load(html);
@@ -55,7 +54,8 @@ export async function scrapeABCNewsBusinessHomepage(
       .replace(/&#39;/g, "'")
       .trim();
     
-    if (url && url.includes("/Business/story") && !seenUrls.has(url) && title && title.length > 10) {
+    // Accept URLs with /Business/.../story or /Business/.../story?id=
+    if (url && url.includes("abcnews.go.com/Business/") && (url.includes("/story") || url.includes("story?id=")) && !seenUrls.has(url) && title && title.length > 10) {
       seenUrls.add(url);
       items.push({ title, url, imageUrl });
     }
@@ -115,75 +115,116 @@ export async function scrapeABCNewsBusinessHomepage(
     }
   }
   
+  // Pattern 4: Look for Business story URLs in any JSON structure (handles /story?id= format)
+  if (items.length < limit) {
+    // Match location with Business URLs that contain "story" (handles both /story/ and /story?id=)
+    const storyPattern4 = /"location":"(https:\/\/abcnews\.go\.com\/Business\/[^"]*story[^"]*)"[^}]*"title":"([^"]+)"/g;
+    let match4;
+    
+    while ((match4 = storyPattern4.exec(html)) !== null && items.length < limit) {
+      const url = match4[1];
+      let title = match4[2] || "";
+      
+      title = title
+        .replace(/\\"/g, '"')
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .trim();
+      
+      // Accept URLs with story (handles /story?id= format)
+      if (url && url.includes("abcnews.go.com/Business/") && url.includes("story") && !seenUrls.has(url) && title && title.length > 10) {
+        seenUrls.add(url);
+        
+        // Try to find image URL near this match
+        const imageMatch = html.substring(match4.index, match4.index + 800).match(/"image":"([^"]+)"/);
+        const imageUrl = imageMatch ? imageMatch[1] : undefined;
+        
+        items.push({ title, url, imageUrl });
+      }
+    }
+  }
+  
   // Fallback: Parse HTML directly for article links
   if (items.length < limit) {
-    $('a[href*="/Business/story"]').each((_, link) => {
-      if (items.length >= limit) return;
+    // Try multiple selectors for article links
+    const linkSelectors = [
+      'a[href*="/Business/story"]',
+      'a[href*="/business/story"]',
+      'a[href*="/Business/"]',
+      'article a[href*="/Business/"]',
+      '[data-testid*="story"] a',
+      '[class*="story"] a[href*="/Business/"]',
+      'h2 a[href*="/Business/"]',
+      'h3 a[href*="/Business/"]',
+    ];
 
-      const $link = $(link);
-      const rawHref = $link.attr("href");
+    for (const linkSelector of linkSelectors) {
+      if (items.length >= limit) break;
 
-      if (!rawHref || rawHref.includes("#") || rawHref.includes("javascript:")) {
-        return;
-      }
+      $(linkSelector).each((_, link) => {
+        if (items.length >= limit) return;
 
-      // Build absolute URL
-      let url: string;
-      try {
-        url = rawHref.startsWith("http")
-          ? rawHref
-          : new URL(rawHref, abcNewsBusinessUrl).toString();
-      } catch {
-        return;
-      }
+        const $link = $(link);
+        const rawHref = $link.attr("href");
 
-      // Only accept abcnews.go.com/Business/story URLs
-      if (!url.includes("abcnews.go.com/Business/story")) {
-        return;
-      }
-
-      // Skip if we've already seen this URL
-      if (seenUrls.has(url)) {
-        return;
-      }
-
-      // Extract title
-      let title = $link.text().trim();
-
-      // Try to find title in parent container
-      if (!title || title.length < 10) {
-        const $parent = $link.closest("article, .card, .story-card, [class*='card'], [class*='story'], div");
-        const $titleEl = $parent.find("h2, h3, h4, [class*='title'], [class*='headline']").first();
-        if ($titleEl.length) {
-          title = $titleEl.text().trim();
+        if (!rawHref || rawHref.includes("#") || rawHref.includes("javascript:")) {
+          return;
         }
-      }
 
-      // Fallback: try aria-label or data attributes
-      if (!title || title.length < 10) {
-        title = $link.attr("aria-label") || $link.attr("title") || "";
-      }
+        // Build absolute URL
+        let url: string;
+        try {
+          url = rawHref.startsWith("http")
+            ? rawHref
+            : new URL(rawHref, abcNewsBusinessUrl).toString();
+        } catch {
+          return;
+        }
 
-      // Skip if no title found or title is too short
-      if (!title || title.length < 10) {
-        return;
-      }
+        // Only accept abcnews.go.com/Business/ URLs that contain "story" (handles both /story/ and /story?id= formats)
+        // Also accept wireStory URLs which are valid Business articles
+        if (!url.includes("abcnews.go.com/Business/") || (!url.includes("story") && !url.includes("wireStory"))) {
+          return;
+        }
 
-      seenUrls.add(url);
+        // Skip if we've already seen this URL
+        if (seenUrls.has(url)) {
+          return;
+        }
 
-      // Find image - look in parent container
-      const $parent = $link.closest("article, .card, .story-card, [class*='card'], [class*='story'], div");
-      const $img = $parent.find("img").first();
-      const imageUrl = $img.attr("src") || $img.attr("data-src") || $img.attr("data-lazy-src") || undefined;
+        // Extract title
+        let title = $link.text().trim();
 
-      items.push({ title, url, imageUrl });
-    });
+        // Try to find title in parent container
+        if (!title || title.length < 10) {
+          const $parent = $link.closest("article, .card, .story-card, [class*='card'], [class*='story'], div, li");
+          const $titleEl = $parent.find("h1, h2, h3, h4, [class*='title'], [class*='headline'], [data-testid*='headline']").first();
+          if ($titleEl.length) {
+            title = $titleEl.text().trim();
+          }
+        }
+
+        // Fallback: try aria-label or data attributes
+        if (!title || title.length < 10) {
+          title = $link.attr("aria-label") || $link.attr("title") || "";
+        }
+
+        // Skip if no title found or title is too short
+        if (!title || title.length < 10) {
+          return;
+        }
+
+        seenUrls.add(url);
+
+        // Find image - look in parent container
+        const $parent = $link.closest("article, .card, .story-card, [class*='card'], [class*='story'], div, li");
+        const $img = $parent.find("img").first();
+        const imageUrl = $img.attr("src") || $img.attr("data-src") || $img.attr("data-lazy-src") || $img.attr("data-original") || undefined;
+
+        items.push({ title, url, imageUrl });
+      });
+    }
   }
-
-  logger.info("Scraped ABC News Business items", {
-    count: items.length,
-    limit: limit,
-  });
 
   return items.slice(0, limit);
 }

@@ -25,7 +25,6 @@ export async function scrapeABCNewsInternationalHomepage(
 ): Promise<ABCNewsInternationalArticleItem[]> {
   const abcNewsInternationalUrl = "https://abcnews.go.com/International";
 
-  logger.info("Fetching ABC News International page...", { url: abcNewsInternationalUrl });
   const response = await axios.get(abcNewsInternationalUrl);
   const html = response.data;
   const $ = cheerio.load(html);
@@ -179,11 +178,6 @@ export async function scrapeABCNewsInternationalHomepage(
       items.push({ title, url, imageUrl });
     });
   }
-
-  logger.info("Scraped ABC News International items", {
-    count: items.length,
-    limit: limit,
-  });
 
   return items.slice(0, limit);
 }

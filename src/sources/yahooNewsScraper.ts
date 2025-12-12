@@ -18,35 +18,49 @@ export interface YahooArticleDetails {
 
 /**
  * Scrapes Yahoo News US section (https://www.yahoo.com/news/us/)
- * and returns article items matching specific titles.
+ * and returns the latest article items.
  */
 export async function scrapeYahooUSNews(
-  targetTitles: string[]
+  limit = 4
 ): Promise<YahooUSArticleItem[]> {
   const usNewsUrl = "https://www.yahoo.com/news/us/";
 
-  logger.info("Fetching Yahoo News US page...", { url: usNewsUrl });
   const response = await axios.get(usNewsUrl);
   const $ = cheerio.load(response.data);
 
   const items: YahooUSArticleItem[] = [];
   const seenUrls = new Set<string>();
 
-  // Yahoo News US page structure - articles can be in various containers
-  // Strategy: Find all links, extract titles, and match against target titles
-  
-  // First, try to find articles in common Yahoo News containers
+  // Common navigation/section text to exclude
+  const excludedTexts = [
+    "today's news",
+    "newsletters",
+    "weather news",
+    "sign up",
+    "more in",
+    "follow us",
+    "subscribe",
+    "newsletter",
+    "tariff updates",
+    "live updates",
+    "watch now",
+    "trending",
+  ];
+
+  // Yahoo News US page structure - focus on article containers
   const selectors = [
-    'a[href*="/news/"]',
-    'a[href*="/article/"]',
-    'article a',
-    '[data-module="Article"] a',
-    '.caas-list-item a',
+    'article a[href*="/news/articles/"]',
+    'article a[href*="/news/us/"]',
+    '[data-module="Article"] a[href*="/news/articles/"]',
+    '.caas-list-item a[href*="/news/articles/"]',
+    'a[href*="/news/articles/"]',
   ];
 
   for (const selector of selectors) {
+    if (items.length >= limit) break; // Stop when we've collected enough articles
+
     $(selector).each((_, link) => {
-      if (items.length >= targetTitles.length) return; // Stop when we found all targets
+      if (items.length >= limit) return; // Stop when we've collected enough articles
 
       const $link = $(link);
       const rawHref = $link.attr("href");
@@ -63,6 +77,12 @@ export async function scrapeYahooUSNews(
           : new URL(rawHref, usNewsUrl).toString();
       } catch {
         return; // skip invalid URLs
+      }
+
+      // Only accept yahoo.com/news/articles/ URLs (actual articles)
+      // Exclude finance.yahoo.com, section pages, and other non-article URLs
+      if (!url.includes("yahoo.com/news/articles/")) {
+        return;
       }
 
       // Skip if we've already seen this URL
@@ -85,24 +105,15 @@ export async function scrapeYahooUSNews(
         return;
       }
 
-      // Check if this title matches any of our target titles (case-insensitive, partial match)
+      // Skip navigation/section links by checking title text
       const titleLower = title.toLowerCase();
-      const normalizedTitle = titleLower.replace(/[^\w\s]/g, " ").replace(/\s+/g, " ").trim();
-      
-      const matchesTarget = targetTitles.some((target) => {
-        const normalizedTarget = target.toLowerCase().replace(/[^\w\s]/g, " ").replace(/\s+/g, " ").trim();
-        // Check for partial matches (at least 60% of words match)
-        const targetWords = normalizedTarget.split(" ").filter(w => w.length > 3);
-        const titleWords = normalizedTitle.split(" ").filter(w => w.length > 3);
-        const matchingWords = targetWords.filter(tw => titleWords.some(titw => titw.includes(tw) || tw.includes(titw)));
-        
-        return normalizedTitle.includes(normalizedTarget) || 
-               normalizedTarget.includes(normalizedTitle) ||
-               (targetWords.length > 0 && matchingWords.length / targetWords.length >= 0.6);
-      });
+      if (excludedTexts.some(excluded => titleLower.includes(excluded))) {
+        return;
+      }
 
-      if (!matchesTarget) {
-        return; // Skip articles that don't match our target titles
+      // Skip URLs that are section pages (not individual articles)
+      if (url.endsWith("/") || url.match(/\/news\/(world|us|politics|entertainment)\/?$/)) {
+        return;
       }
 
       seenUrls.add(url);
@@ -116,12 +127,7 @@ export async function scrapeYahooUSNews(
     });
   }
 
-  logger.info("Scraped Yahoo News US items", {
-    count: items.length,
-    targetCount: targetTitles.length,
-  });
-
-  return items;
+  return items.slice(0, limit);
 }
 
 /**
@@ -133,7 +139,6 @@ export async function scrapeYahooWorldNews(
 ): Promise<YahooUSArticleItem[]> {
   const worldNewsUrl = "https://www.yahoo.com/news/world/";
 
-  logger.info("Fetching Yahoo News World page...", { url: worldNewsUrl });
   const response = await axios.get(worldNewsUrl);
   const $ = cheerio.load(response.data);
 
@@ -234,11 +239,6 @@ export async function scrapeYahooWorldNews(
     });
   }
 
-  logger.info("Scraped Yahoo News World items", {
-    count: items.length,
-    limit: limit,
-  });
-
   return items;
 }
 
@@ -251,7 +251,6 @@ export async function scrapeYahooPoliticsNews(
 ): Promise<YahooUSArticleItem[]> {
   const politicsNewsUrl = "https://www.yahoo.com/news/politics/";
 
-  logger.info("Fetching Yahoo News Politics page...", { url: politicsNewsUrl });
   const response = await axios.get(politicsNewsUrl);
   const $ = cheerio.load(response.data);
 
@@ -469,11 +468,6 @@ export async function scrapeYahooPoliticsNews(
     items.push({ title: article.title, url: article.url, imageUrl: article.imageUrl });
   }
 
-  logger.info("Scraped Yahoo News Politics items", {
-    count: items.length,
-    limit: limit,
-  });
-
   return items;
 }
 
@@ -486,7 +480,6 @@ export async function scrapeYahooFinanceNews(
 ): Promise<YahooUSArticleItem[]> {
   const financeUrl = "https://finance.yahoo.com/";
 
-  logger.info("Fetching Yahoo Finance page...", { url: financeUrl });
   const response = await axios.get(financeUrl);
   const $ = cheerio.load(response.data);
 
@@ -695,11 +688,6 @@ export async function scrapeYahooFinanceNews(
     items.push({ title: article.title, url: article.url, imageUrl: article.imageUrl });
   }
 
-  logger.info("Scraped Yahoo Finance items", {
-    count: items.length,
-    limit: limit,
-  });
-
   return items;
 }
 
@@ -712,7 +700,6 @@ export async function scrapeYahooEntertainmentNews(
 ): Promise<YahooUSArticleItem[]> {
   const entertainmentUrl = "https://www.yahoo.com/entertainment/";
 
-  logger.info("Fetching Yahoo Entertainment page...", { url: entertainmentUrl });
   const response = await axios.get(entertainmentUrl);
   const $ = cheerio.load(response.data);
 
@@ -920,11 +907,6 @@ export async function scrapeYahooEntertainmentNews(
     items.push({ title: article.title, url: article.url, imageUrl: article.imageUrl });
   }
 
-  logger.info("Scraped Yahoo Entertainment items", {
-    count: items.length,
-    limit: limit,
-  });
-
   return items;
 }
 
@@ -937,7 +919,6 @@ export async function scrapeYahooLifestyleNews(
 ): Promise<YahooUSArticleItem[]> {
   const lifestyleUrl = "https://www.yahoo.com/lifestyle/";
 
-  logger.info("Fetching Yahoo Lifestyle page...", { url: lifestyleUrl });
   const response = await axios.get(lifestyleUrl);
   const $ = cheerio.load(response.data);
 
@@ -1145,11 +1126,6 @@ export async function scrapeYahooLifestyleNews(
     items.push({ title: article.title, url: article.url, imageUrl: article.imageUrl });
   }
 
-  logger.info("Scraped Yahoo Lifestyle items", {
-    count: items.length,
-    limit: limit,
-  });
-
   return items;
 }
 
@@ -1162,7 +1138,6 @@ export async function scrapeYahooScienceNews(
 ): Promise<YahooUSArticleItem[]> {
   const scienceUrl = "https://www.yahoo.com/news/science/";
 
-  logger.info("Fetching Yahoo News Science page...", { url: scienceUrl });
   const response = await axios.get(scienceUrl);
   const $ = cheerio.load(response.data);
 
@@ -1369,11 +1344,6 @@ export async function scrapeYahooScienceNews(
   for (const article of latestArticles) {
     items.push({ title: article.title, url: article.url, imageUrl: article.imageUrl });
   }
-
-  logger.info("Scraped Yahoo Science items", {
-    count: items.length,
-    limit: limit,
-  });
 
   return items;
 }
