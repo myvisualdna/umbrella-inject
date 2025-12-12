@@ -31,7 +31,6 @@ export async function scrapeTechCrunchNews(
 ): Promise<TechCrunchArticleItem[]> {
   const techCrunchUrl = "https://techcrunch.com/";
 
-  logger.info("Fetching TechCrunch homepage...", { url: techCrunchUrl });
   const response = await axios.get(techCrunchUrl);
   const $ = cheerio.load(response.data);
 
@@ -156,11 +155,6 @@ export async function scrapeTechCrunchNews(
   } else {
     logger.warn("Could not locate 'Top Headlines' section, falling back to general article search");
   }
-
-  logger.info("Scraped TechCrunch items", {
-    count: items.length,
-    limit: limit,
-  });
 
   return items;
 }

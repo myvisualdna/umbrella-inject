@@ -25,7 +25,6 @@ export async function scrapeAPNewsHomepage(
 ): Promise<APNewsArticleItem[]> {
   const usNewsUrl = "https://apnews.com/us-news";
   
-  logger.info("Fetching AP News US News page...", { url: usNewsUrl });
   const response = await axios.get(usNewsUrl);
   const $ = cheerio.load(response.data);
   
@@ -94,10 +93,6 @@ export async function scrapeAPNewsHomepage(
     items.push({ title, url, imageUrl });
   });
   
-  logger.info("Scraped AP News US News items", {
-    count: items.length,
-  });
-  
   return items;
 }
 
@@ -110,7 +105,6 @@ export async function scrapeAPNewsWorldHomepage(
 ): Promise<APNewsArticleItem[]> {
   const worldNewsUrl = "https://apnews.com/world-news";
   
-  logger.info("Fetching AP News World News page...", { url: worldNewsUrl });
   const response = await axios.get(worldNewsUrl);
   const $ = cheerio.load(response.data);
   
@@ -179,10 +173,6 @@ export async function scrapeAPNewsWorldHomepage(
     items.push({ title, url, imageUrl });
   });
   
-  logger.info("Scraped AP News World News items", {
-    count: items.length,
-  });
-  
   return items;
 }
 
@@ -195,7 +185,6 @@ export async function scrapeAPNewsPoliticsHomepage(
 ): Promise<APNewsArticleItem[]> {
   const politicsUrl = "https://apnews.com/politics";
   
-  logger.info("Fetching AP News Politics page...", { url: politicsUrl });
   const response = await axios.get(politicsUrl);
   const $ = cheerio.load(response.data);
   
@@ -346,9 +335,6 @@ export async function scrapeAPNewsPoliticsHomepage(
     });
   }
   
-  logger.info("Scraped AP News Politics items", {
-    count: items.length,
-  });
   
   return items;
 }
@@ -362,7 +348,6 @@ export async function scrapeAPNewsBusinessHomepage(
 ): Promise<APNewsArticleItem[]> {
   const businessUrl = "https://apnews.com/business";
   
-  logger.info("Fetching AP News Business page...", { url: businessUrl });
   const response = await axios.get(businessUrl);
   const $ = cheerio.load(response.data);
   
@@ -513,9 +498,6 @@ export async function scrapeAPNewsBusinessHomepage(
     });
   }
   
-  logger.info("Scraped AP News Business items", {
-    count: items.length,
-  });
   
   return items;
 }
@@ -529,7 +511,6 @@ export async function scrapeAPNewsScienceHomepage(
 ): Promise<APNewsArticleItem[]> {
   const scienceUrl = "https://apnews.com/science";
   
-  logger.info("Fetching AP News Science page...", { url: scienceUrl });
   const response = await axios.get(scienceUrl);
   const $ = cheerio.load(response.data);
   
@@ -680,9 +661,6 @@ export async function scrapeAPNewsScienceHomepage(
     });
   }
   
-  logger.info("Scraped AP News Science items", {
-    count: items.length,
-  });
   
   return items;
 }
@@ -696,7 +674,6 @@ export async function scrapeAPNewsTechnologyHomepage(
 ): Promise<APNewsArticleItem[]> {
   const technologyUrl = "https://apnews.com/technology";
   
-  logger.info("Fetching AP News Technology page...", { url: technologyUrl });
   const response = await axios.get(technologyUrl);
   const $ = cheerio.load(response.data);
   
@@ -847,9 +824,6 @@ export async function scrapeAPNewsTechnologyHomepage(
     });
   }
   
-  logger.info("Scraped AP News Technology items", {
-    count: items.length,
-  });
   
   return items;
 }
@@ -863,7 +837,6 @@ export async function scrapeAPNewsLifestyleHomepage(
 ): Promise<APNewsArticleItem[]> {
   const lifestyleUrl = "https://apnews.com/lifestyle";
   
-  logger.info("Fetching AP News Lifestyle page...", { url: lifestyleUrl });
   const response = await axios.get(lifestyleUrl);
   const $ = cheerio.load(response.data);
   
@@ -1014,9 +987,6 @@ export async function scrapeAPNewsLifestyleHomepage(
     });
   }
   
-  logger.info("Scraped AP News Lifestyle items", {
-    count: items.length,
-  });
   
   return items;
 }
@@ -1030,7 +1000,6 @@ export async function scrapeAPNewsEntertainmentHomepage(
 ): Promise<APNewsArticleItem[]> {
   const entertainmentUrl = "https://apnews.com/entertainment";
   
-  logger.info("Fetching AP News Entertainment page...", { url: entertainmentUrl });
   const response = await axios.get(entertainmentUrl);
   const $ = cheerio.load(response.data);
   
@@ -1181,9 +1150,6 @@ export async function scrapeAPNewsEntertainmentHomepage(
     });
   }
   
-  logger.info("Scraped AP News Entertainment items", {
-    count: items.length,
-  });
   
   return items;
 }

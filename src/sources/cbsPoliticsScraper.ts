@@ -30,7 +30,6 @@ export async function scrapeCBSPoliticsNews(
 ): Promise<CBSPoliticsArticleItem[]> {
   const cbsPoliticsUrl = "https://www.cbsnews.com/politics/";
 
-  logger.info("Fetching CBS News Politics page...", { url: cbsPoliticsUrl });
   const response = await axios.get(cbsPoliticsUrl);
   const $ = cheerio.load(response.data);
 
@@ -88,10 +87,6 @@ export async function scrapeCBSPoliticsNews(
     items.push({ title, url, imageUrl });
   });
 
-  logger.info("Scraped CBS News Politics items", {
-    count: items.length,
-    limit: limit,
-  });
 
   return items;
 }

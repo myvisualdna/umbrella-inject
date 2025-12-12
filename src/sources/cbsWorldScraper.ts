@@ -30,7 +30,6 @@ export async function scrapeCBSWorldNews(
 ): Promise<CBSWorldArticleItem[]> {
   const cbsWorldUrl = "https://www.cbsnews.com/world/";
 
-  logger.info("Fetching CBS News World page...", { url: cbsWorldUrl });
   const response = await axios.get(cbsWorldUrl);
   const $ = cheerio.load(response.data);
 
@@ -88,10 +87,6 @@ export async function scrapeCBSWorldNews(
     items.push({ title, url, imageUrl });
   });
 
-  logger.info("Scraped CBS News World items", {
-    count: items.length,
-    limit: limit,
-  });
 
   return items;
 }

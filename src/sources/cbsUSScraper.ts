@@ -30,7 +30,6 @@ export async function scrapeCBSUSNews(
 ): Promise<CBSUSArticleItem[]> {
   const cbsUSUrl = "https://www.cbsnews.com/us/";
 
-  logger.info("Fetching CBS News US page...", { url: cbsUSUrl });
   const response = await axios.get(cbsUSUrl);
   const $ = cheerio.load(response.data);
 
@@ -88,10 +87,6 @@ export async function scrapeCBSUSNews(
     items.push({ title, url, imageUrl });
   });
 
-  logger.info("Scraped CBS News US items", {
-    count: items.length,
-    limit: limit,
-  });
 
   return items;
 }
