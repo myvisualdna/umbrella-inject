@@ -184,7 +184,7 @@ async function scrapeSource(source: SourceKey, count: number): Promise<void> {
  */
 export async function executeRun(run: RunConfig): Promise<void> {
   logger.info(
-    `🚀 Executing run ${run.id} (${run.label}) scheduled at ET ${run.timeET}`
+    `🚀 Executing run ${run.id} (${run.label})`
   );
 
   const startTime = Date.now();

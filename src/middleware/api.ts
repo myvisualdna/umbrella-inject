@@ -74,9 +74,9 @@ export function createPrompt(article: Article): string {
 Rules: Keep facts/names/dates/quotes accurate. Rewrite with new wording/structure in a neutral news tone. Do not add new info.
 Body: remove bylines/author names, publisher/network/agency mentions, and promo/CTA lines.
 
-Limits: title max 160 chars, tickerTitle max 45 chars, excerpt max 160 chars, body max 650 words (3–4 paragraphs), imageKeyword 1 keyword, tags = exactly 3 strings from: ${tagsList}.
-If any field exceeds its limit, shorten it to fit (do not exceed limits).
+Limits: title ≤160 chars, tickerTitle ≤45 chars, excerpt ≤160 chars, body ≤650 words (3–4 paragraphs), imageKeyword 1–2 words, tags = exactly 3 strings from: ${tagsList}. If any field exceeds its limit, shorten it to fit.
 
+imageKeyword: use the article’s main subject (prefer proper noun; else concrete topic). Avoid generic terms. Output only the keyword/phrase.
 
 Article:
 Title: ${filtered.title}

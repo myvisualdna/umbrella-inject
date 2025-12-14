@@ -5,7 +5,7 @@
 /**
  * Image source provider types
  */
-export type ImageSource = "pexels" | "pixabay";
+export type ImageSource = "wikimedia" | "pexels" | "pixabay";
 
 /**
  * Response from ChatGPT containing rewritten article with imageKeyword and tickerTitle
@@ -32,8 +32,14 @@ export interface ImageResult {
   authorName?: string;
   authorUrl?: string;
   source: ImageSource;
-  sourcePageUrl?: string; // Page on Pexels/Pixabay
+  sourcePageUrl?: string; // Page on Pexels/Pixabay/Wikimedia Commons
   license?: string; // e.g. "CC BY 4.0", "Pexels License", etc.
+  
+  // Wikimedia Commons specific fields
+  imageDescription?: string; // For alt text and epigraph
+  artist?: string; // For creditAuthor
+  attribution?: string; // For creditProvider
+  licenseShortName?: string; // For creditLicense (e.g., "CC BY-SA 3.0")
 }
 
 /**

@@ -2,12 +2,14 @@
  * Cascade Image Search Logic
  * 
  * Implements a cascade approach:
- * 1. Try Pexels first
- * 2. Fallback to Pixabay if Pexels fails
+ * 1. Try Wikimedia Commons first
+ * 2. Fallback to Pexels if Wikimedia fails
+ * 3. Fallback to Pixabay if Pexels fails
  */
 
 import { logger } from "../config/logger";
 import { ImageResult } from "./types";
+import { searchWikimedia } from "./providers/wikimedia";
 import { searchPexels } from "./providers/pexels";
 import { searchPixabay } from "./providers/pixabay";
 
@@ -31,8 +33,9 @@ function buildSearchQuery(params: GetArticleImageParams): string {
  * Main cascade function to get article image
  * 
  * Flow:
- * 1. Try Pexels first
- * 2. Fallback to Pixabay if Pexels fails
+ * 1. Try Wikimedia Commons first
+ * 2. Fallback to Pexels if Wikimedia fails
+ * 3. Fallback to Pixabay if Pexels fails
  * 
  * @param params - Search parameters
  * @returns ImageResult or null if no image found
@@ -47,7 +50,13 @@ export async function getArticleImage(
     return null;
   }
 
-  // Try Pexels first
+  // Try Wikimedia Commons first
+  const wikimedia = await searchWikimedia(query, { perPage: 5 });
+  if (wikimedia) {
+    return wikimedia;
+  }
+
+  // Fallback to Pexels
   const pexels = await searchPexels(query, { perPage: 5 });
   if (pexels) {
     return pexels;
