@@ -10,7 +10,6 @@ export interface RunSourceConfig {
 export interface RunConfig {
   id: "run1" | "run2" | "run3" | "run4";
   label: string;
-  timeET: string;
   enabled: boolean;
   sources: RunSourceConfig[];
 }
@@ -31,7 +30,6 @@ export const SCRAPING_RUNS: RunConfig[] = [
   {
     id: "run1",
     label: "Morning Run",
-    timeET: process.env.SCRAPE_RUN1_TIME || "07:00",
     enabled: runSwitches.run1,
     sources: [
       { source: "apNewsUS", count: 2 },
@@ -45,7 +43,6 @@ export const SCRAPING_RUNS: RunConfig[] = [
   {
     id: "run2",
     label: "Midday Run",
-    timeET: process.env.SCRAPE_RUN2_TIME || "12:00",
     enabled: runSwitches.run2,
     sources: [
       { source: "apNewsBusiness", count: 1 },
@@ -63,7 +60,6 @@ export const SCRAPING_RUNS: RunConfig[] = [
   {
     id: "run3",
     label: "Evening Run",
-    timeET: process.env.SCRAPE_RUN3_TIME || "17:00",
     enabled: runSwitches.run3,
     sources: [
       { source: "apNewsUS", count: 1 },
@@ -79,7 +75,6 @@ export const SCRAPING_RUNS: RunConfig[] = [
   {
     id: "run4",
     label: "Late Run",
-    timeET: process.env.SCRAPE_RUN4_TIME || "22:00",
     enabled: runSwitches.run4,
     sources: [
       { source: "yahooEntertainmentNews", count: 1 },

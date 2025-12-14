@@ -195,11 +195,13 @@ export const EDITORIAL_CONFIG: EditorialConfig = {
  * 
  * @param runId - The run ID (e.g., "run1", "run2")
  * @param origin - The article origin (e.g., "apNewsUS", "yahooUSNews")
+ * @param publishedAt - Optional published date (ISO string) to calculate frontUntil
  * @returns Editorial flags or undefined if no configuration exists
  */
 export function getEditorialFlags(
   runId: string,
-  origin: string | undefined
+  origin: string | undefined,
+  publishedAt?: string
 ): EditorialFlags | undefined {
   if (!origin) {
     return undefined;
@@ -210,7 +212,23 @@ export function getEditorialFlags(
     return undefined;
   }
 
-  return runConfig[origin];
+  const flags = runConfig[origin];
+  if (!flags) {
+    return undefined;
+  }
+
+  // If frontline is true, calculate frontUntil (20 hours from publishedAt)
+  if (flags.frontline) {
+    const baseDate = publishedAt ? new Date(publishedAt) : new Date();
+    const frontUntil = new Date(baseDate.getTime() + 20 * 60 * 60 * 1000).toISOString();
+    
+    return {
+      ...flags,
+      frontUntil,
+    };
+  }
+
+  return flags;
 }
 
 /**

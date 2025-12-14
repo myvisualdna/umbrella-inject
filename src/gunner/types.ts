@@ -37,6 +37,12 @@ export interface SanityCover {
   };
   alt?: string;
   epigraph?: string;
+  // Credit/attribution fields (for Wikimedia Commons compliance)
+  creditProvider?: string;
+  creditAuthor?: string;
+  creditSourceUrl?: string;
+  creditLicense?: string;
+  // Legacy field (kept for backward compatibility)
   imageSource?: string;
 }
 

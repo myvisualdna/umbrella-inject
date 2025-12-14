@@ -129,19 +129,66 @@ function mapImageToCover(
   const cover: SanityCover = {
     source: "external",
     externalUrl: image.url,
-    alt: image.authorName || imageKeyword || "Article cover image",
   };
 
-  // Add image source/credit if available
-  if (image.authorName || image.source) {
-    const creditParts: string[] = [];
+  // Handle Wikimedia Commons specific fields
+  if (image.source === "wikimedia") {
+    // Extract ImageDescription for both alt and epigraph
+    const imageDescription = image.imageDescription;
+    if (imageDescription) {
+      cover.alt = imageDescription;
+      cover.epigraph = imageDescription; // Same value for both fields
+    } else {
+      // Fallback to keyword if no description
+      cover.alt = imageKeyword || "Article cover image";
+    }
+
+    // Map Wikimedia Commons metadata to credit fields
+    cover.creditAuthor = image.artist; // Artist -> creditAuthor (HTML already stripped in provider)
+    cover.creditProvider = "Wikimedia Commons"; // Always "Wikimedia Commons" for Wikimedia images
+    cover.creditLicense = image.licenseShortName; // LicenseShortName -> creditLicense
+    cover.creditSourceUrl = image.sourcePageUrl; // File page URL -> creditSourceUrl
+
+    // Legacy field for backward compatibility
+    if (image.artist || image.source) {
+      const creditParts: string[] = [];
+      if (image.artist) {
+        creditParts.push(image.artist);
+      }
+      if (image.source) {
+        creditParts.push(`via ${image.source}`);
+      }
+      cover.imageSource = creditParts.join(" / ");
+    }
+  } else {
+    // For Pexels/Pixabay, use existing logic
+    cover.alt = image.authorName || imageKeyword || "Article cover image";
+
+    // Add image source/credit if available
+    if (image.authorName || image.source) {
+      const creditParts: string[] = [];
+      if (image.authorName) {
+        creditParts.push(image.authorName);
+      }
+      if (image.source) {
+        creditParts.push(`via ${image.source}`);
+      }
+      cover.imageSource = creditParts.join(" / ");
+    }
+
+    // For non-Wikimedia sources, set credit fields if available
     if (image.authorName) {
-      creditParts.push(image.authorName);
+      cover.creditAuthor = image.authorName;
     }
     if (image.source) {
-      creditParts.push(`via ${image.source}`);
+      cover.creditProvider = image.source === "pexels" ? "Pexels" : image.source === "pixabay" ? "Pixabay" : image.source;
     }
-    cover.imageSource = creditParts.join(" / ");
+    if (image.license) {
+      cover.creditLicense = image.license;
+    }
+    if (image.sourcePageUrl) {
+      cover.creditSourceUrl = image.sourcePageUrl;
+    }
   }
 
   return cover;
@@ -203,7 +250,8 @@ export function mapProcessedArticleToSanity(
   };
 
   // Get editorial flags from config based on runId and origin
-  const editorialFlags = runId ? getEditorialFlags(runId, originalArticle.origin) : undefined;
+  // Pass publishedDate to calculate frontUntil when frontline is true
+  const editorialFlags = runId ? getEditorialFlags(runId, originalArticle.origin, publishedDate) : undefined;
 
   // Resolve tags from ChatGPT response (array of strings) to Sanity references
   const tagReferences = resolveTagReferences(processedArticle.tags || []);
