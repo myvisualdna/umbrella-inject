@@ -31,7 +31,7 @@ function trimToMaxChars(input: string, max: number): string {
  * 
  * - Trims title, tickerTitle, excerpt to their max lengths
  * - Ensures tags array has exactly 3 strings
- * - Ensures imageKeyword is a single keyword
+ * - Ensures imageKeyword is 1-2 words (as per prompt instructions)
  * 
  * @param obj - Parsed ChatGPT response object
  * @returns Object with enforced limits
@@ -57,9 +57,20 @@ export function enforceOutputLimits(obj: any): any {
       .slice(0, 3);
   }
 
-  // Ensure imageKeyword is a single keyword (take first token)
+  // Ensure imageKeyword is 1-2 words (as per prompt instructions)
+  // If it's too long, trim to first 2 words
+  // If it's 1-2 words, keep as-is
   if (typeof obj.imageKeyword === "string") {
-    obj.imageKeyword = obj.imageKeyword.trim().split(/\s+/)[0] || obj.imageKeyword.trim();
+    const trimmed = obj.imageKeyword.trim();
+    const words = trimmed.split(/\s+/).filter((w: string) => w.length > 0);
+    
+    if (words.length > 2) {
+      // If more than 2 words, take first 2
+      obj.imageKeyword = words.slice(0, 2).join(" ");
+    } else {
+      // Otherwise keep as-is (1-2 words as per instructions)
+      obj.imageKeyword = trimmed;
+    }
   }
 
   return obj;

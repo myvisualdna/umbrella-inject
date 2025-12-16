@@ -103,11 +103,17 @@ export interface SanityPostDocument {
   
   // Editorial positioning flags (set via editorialConfig)
   mainHeadline?: boolean;
+  mainHeadlineRank?: number; // 0-10, only used when mainHeadline is true
+  mainHeadlineUntil?: string; // ISO datetime string, only used when mainHeadline is true
   frontline?: boolean;
   frontRank?: number; // 0-10, only used when frontline is true
   frontUntil?: string; // ISO datetime string, only used when frontline is true
   rightHeadline?: boolean;
+  rightHeadlineRank?: number; // 0-10, only used when rightHeadline is true
+  rightHeadlineUntil?: string; // ISO datetime string, only used when rightHeadline is true
   justIn?: boolean;
+  justInRank?: number; // 0-10, only used when justIn is true
+  justInUntil?: string; // ISO datetime string, only used when justIn is true
   breakingNews?: boolean; // Only used when justIn is true
   developingStory?: boolean; // Only used when justIn is true
   
