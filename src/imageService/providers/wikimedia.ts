@@ -7,6 +7,11 @@
 
 import { logger } from "../../config/logger";
 import { ImageResult } from "../types";
+import {
+  selectBestCommonsImage,
+  CommonsCandidate,
+  SelectedCommonsImage,
+} from "./wikimediaAlgorithm";
 
 const WIKIMEDIA_API_URL = "https://commons.wikimedia.org/w/api.php";
 
@@ -73,6 +78,111 @@ export interface WikimediaSearchOptions {
 
 /**
  * Fetches detailed image metadata from Wikimedia Commons using MediaWiki Action API
+ * Returns data in CommonsCandidate format for the selector algorithm
+ * 
+ * @param fileTitles - Array of file names (e.g., ["File:Example.jpg", "File:Another.jpg"])
+ * @returns Array of CommonsCandidate objects with full metadata
+ */
+async function fetchCandidatesMetadata(fileTitles: string[]): Promise<CommonsCandidate[]> {
+  if (fileTitles.length === 0) return [];
+
+  try {
+    // Wikimedia API allows multiple titles separated by |
+    const titlesParam = fileTitles.join("|");
+    
+    const url = new URL(WIKIMEDIA_API_URL);
+    url.searchParams.set("action", "query");
+    url.searchParams.set("titles", titlesParam);
+    url.searchParams.set("prop", "imageinfo");
+    url.searchParams.set("iiprop", "url|extmetadata|size|mime");
+    url.searchParams.set("iiurlwidth", "1600");
+    url.searchParams.set("format", "json");
+    url.searchParams.set("origin", "*");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        "User-Agent": USER_AGENT,
+      },
+    });
+
+    if (!res.ok) {
+      logger.error("Wikimedia MediaWiki API error:", {
+        status: res.status,
+        statusText: res.statusText,
+      });
+      return [];
+    }
+
+    const data = (await res.json()) as {
+      query?: {
+        pages?: {
+          [pageId: string]: {
+            title?: string;
+            ns?: number;
+            pageid?: number;
+            imageinfo?: Array<{
+              url?: string;
+              thumburl?: string;
+              descriptionurl?: string;
+              width?: number;
+              height?: number;
+              mime?: string;
+              extmetadata?: {
+                ImageDescription?: { value?: string };
+                Artist?: { value?: string };
+                Attribution?: { value?: string };
+                LicenseShortName?: { value?: string };
+                LicenseUrl?: { value?: string };
+                ObjectName?: { value?: string };
+              };
+            }>;
+          };
+        };
+      };
+    };
+
+    const pages = data.query?.pages;
+    if (!pages) {
+      logger.debug("No pages found in Wikimedia API response");
+      return [];
+    }
+
+    const candidates: CommonsCandidate[] = [];
+
+    for (const page of Object.values(pages)) {
+      // Only process File namespace (ns === 6)
+      if (page?.ns !== 6 || !page.title) continue;
+      
+      const imageInfo = page.imageinfo?.[0];
+      if (!imageInfo || !imageInfo.url) continue;
+
+      candidates.push({
+        title: page.title,
+        pageid: page.pageid,
+        imageinfo: {
+          url: imageInfo.url,
+          thumburl: imageInfo.thumburl,
+          descriptionurl: imageInfo.descriptionurl,
+          width: imageInfo.width,
+          height: imageInfo.height,
+          mime: imageInfo.mime,
+          extmetadata: imageInfo.extmetadata,
+        },
+      });
+    }
+
+    return candidates;
+  } catch (error) {
+    logger.error("Wikimedia MediaWiki API request failed:", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return [];
+  }
+}
+
+/**
+ * Fetches detailed image metadata from Wikimedia Commons using MediaWiki Action API
+ * (Legacy function - kept for backward compatibility if needed)
  * 
  * @param fileName - File name (e.g., "File:Example.jpg")
  * @returns Image metadata or null if fetch fails
@@ -235,7 +345,32 @@ async function getFilesFromCategory(
 }
 
 /**
+ * Converts SelectedCommonsImage to ImageResult format
+ */
+function mapSelectedToImageResult(selected: SelectedCommonsImage, candidate: CommonsCandidate): ImageResult {
+  // Extract ImageDescription from the original candidate's extmetadata
+  const imageDescription = candidate.imageinfo?.extmetadata?.ImageDescription?.value
+    ? stripHtmlTags(candidate.imageinfo.extmetadata.ImageDescription.value)
+    : selected.imageTitle;
+
+  return {
+    url: selected.externalUrl,
+    source: "wikimedia",
+    sourcePageUrl: selected.sourcePageUrl,
+    imageDescription, // Use ImageDescription from metadata, fallback to imageTitle
+    artist: selected.creator,
+    attribution: selected.creditProvider, // "Wikimedia Commons"
+    licenseShortName: selected.license,
+    license: selected.license,
+    authorName: selected.creator,
+    width: selected.debug.width,
+    height: selected.debug.height,
+  };
+}
+
+/**
  * Searches Wikimedia Commons API for images (files only, namespace 6)
+ * Uses intelligent selection algorithm to pick the best image
  * 
  * @param query - Search query/keyword
  * @param opts - Search options
@@ -245,8 +380,8 @@ export async function searchWikimedia(
   query: string,
   opts?: WikimediaSearchOptions
 ): Promise<ImageResult | null> {
-  // Request at least 3 results to randomly pick from
-  const limit = Math.max(opts?.perPage ?? 5, 3);
+  // Fetch more candidates for better selection (20 instead of 3-5)
+  const searchLimit = 20;
 
   try {
     // Step 1: Search for files only (namespace 6)
@@ -255,7 +390,7 @@ export async function searchWikimedia(
     searchUrl.searchParams.set("list", "search");
     searchUrl.searchParams.set("srsearch", query);
     searchUrl.searchParams.set("srnamespace", "6"); // Only search File namespace
-    searchUrl.searchParams.set("srlimit", String(limit));
+    searchUrl.searchParams.set("srlimit", String(searchLimit));
     searchUrl.searchParams.set("format", "json");
     searchUrl.searchParams.set("origin", "*");
 
@@ -292,7 +427,7 @@ export async function searchWikimedia(
       fileTitles = searchResults
         .filter((result) => result.ns === 6 && result.title)
         .map((result) => result.title!)
-        .slice(0, limit);
+        .slice(0, searchLimit);
     }
 
     // Step 2: If no files found, try searching without namespace restriction
@@ -304,7 +439,7 @@ export async function searchWikimedia(
       broadSearchUrl.searchParams.set("action", "query");
       broadSearchUrl.searchParams.set("list", "search");
       broadSearchUrl.searchParams.set("srsearch", query);
-      broadSearchUrl.searchParams.set("srlimit", "5");
+      broadSearchUrl.searchParams.set("srlimit", "10");
       broadSearchUrl.searchParams.set("format", "json");
       broadSearchUrl.searchParams.set("origin", "*");
 
@@ -333,13 +468,13 @@ export async function searchWikimedia(
           // Get files from the first category
           const categoryTitle = categories[0].title!;
           logger.debug(`Found category: ${categoryTitle}, expanding to files...`);
-          fileTitles = await getFilesFromCategory(categoryTitle, limit);
+          fileTitles = await getFilesFromCategory(categoryTitle, searchLimit);
         } else {
           // Try to find files in the broad search results
           fileTitles = broadResults
             .filter((result) => result.ns === 6 && result.title)
             .map((result) => result.title!)
-            .slice(0, limit);
+            .slice(0, searchLimit);
         }
       }
     }
@@ -349,42 +484,43 @@ export async function searchWikimedia(
       return null;
     }
 
-    // Randomly pick from the first 3 results (or fewer if less than 3 available)
-    const topResults = fileTitles.slice(0, 3);
-    const randomIndex = Math.floor(Math.random() * topResults.length);
-    const selectedFileTitle = topResults[randomIndex];
+    // Step 3: Fetch metadata for all candidates
+    logger.debug(`Fetching metadata for ${fileTitles.length} candidates...`);
+    const candidates = await fetchCandidatesMetadata(fileTitles);
 
-    if (!selectedFileTitle) {
-      logger.debug("No file title selected");
+    if (candidates.length === 0) {
+      logger.debug("No candidates with valid metadata found");
       return null;
     }
 
-    // Step 3: Fetch detailed metadata including full image URL and licensing info
-    const metadata = await fetchImageMetadata(selectedFileTitle);
-    
-    if (!metadata || !metadata.imageUrl) {
-      logger.warn(`Failed to fetch metadata for ${selectedFileTitle}`);
+    // Step 4: Use selection algorithm to pick the best image
+    const selected = selectBestCommonsImage({
+      keyword: query,
+      candidates,
+      minWidth: 900, // Minimum width for cover images
+    });
+
+    if (!selected) {
+      logger.debug("Selection algorithm found no suitable image");
       return null;
     }
 
-    // Get the file page URL
-    const fileUrl = `https://commons.wikimedia.org/wiki/${encodeURIComponent(selectedFileTitle)}`;
+    // Find the candidate that was selected (by matching URL)
+    const selectedCandidate = candidates.find(
+      (c) => c.imageinfo?.url === selected.externalUrl
+    );
 
-    const result: ImageResult = {
-      url: metadata.imageUrl, // Full-resolution image URL
-      source: "wikimedia",
-      sourcePageUrl: fileUrl,
-      // Wikimedia Commons specific metadata
-      imageDescription: metadata.imageDescription,
-      artist: metadata.artist,
-      attribution: metadata.attribution,
-      licenseShortName: metadata.licenseShortName,
-      license: metadata.licenseShortName, // Also set license for backward compatibility
-      authorName: metadata.artist, // Also set authorName for backward compatibility
-    };
+    if (!selectedCandidate) {
+      logger.warn("Could not find selected candidate in original list");
+      return null;
+    }
 
-    logger.info(`✅ Wikimedia Commons: Found image for "${query}" (randomly selected from ${topResults.length} top results)`);
-    return result;
+    // Log selection details for debugging
+    logger.info(`✅ Wikimedia Commons: Selected best image for "${query}" (score: ${selected.debug.score})`);
+    logger.debug(`Selection reasons: ${selected.debug.reasons.join(", ")}`);
+
+    // Step 5: Convert to ImageResult format
+    return mapSelectedToImageResult(selected, selectedCandidate);
   } catch (error) {
     logger.error("Wikimedia Commons API request failed:", {
       error: error instanceof Error ? error.message : String(error),

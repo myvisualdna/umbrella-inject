@@ -20,8 +20,8 @@ export interface RunConfig {
  * Modify these values to easily control which runs are active
  */
 export const runSwitches = {
-  run1: true, // Morning Run - Set to false to disable
-  run2: false, // Midday Run - Set to false to disable
+  run1: false, // Morning Run - Set to false to disable
+  run2: true, // Midday Run - Set to false to disable
   run3: false, // Evening Run - Set to false to disable
   run4: false, // Late Run - Set to false to disable
 };

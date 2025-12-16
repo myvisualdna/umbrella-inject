@@ -250,7 +250,7 @@ export function mapProcessedArticleToSanity(
   };
 
   // Get editorial flags from config based on runId and origin
-  // Pass publishedDate to calculate frontUntil when frontline is true
+  // Pass publishedDate to calculate frontUntil and justInUntil when needed
   const editorialFlags = runId ? getEditorialFlags(runId, originalArticle.origin, publishedDate) : undefined;
 
   // Resolve tags from ChatGPT response (array of strings) to Sanity references
@@ -291,11 +291,17 @@ export function mapProcessedArticleToSanity(
     
     // Editorial positioning flags (from config)
     mainHeadline: editorialFlags?.mainHeadline,
+    mainHeadlineRank: editorialFlags?.mainHeadlineRank,
+    mainHeadlineUntil: editorialFlags?.mainHeadlineUntil,
     frontline: editorialFlags?.frontline,
     frontRank: editorialFlags?.frontRank,
     frontUntil: editorialFlags?.frontUntil,
     rightHeadline: editorialFlags?.rightHeadline,
+    rightHeadlineRank: editorialFlags?.rightHeadlineRank,
+    rightHeadlineUntil: editorialFlags?.rightHeadlineUntil,
     justIn: editorialFlags?.justIn,
+    justInRank: editorialFlags?.justInRank,
+    justInUntil: editorialFlags?.justInUntil,
     breakingNews: editorialFlags?.breakingNews,
     developingStory: editorialFlags?.developingStory,
   };

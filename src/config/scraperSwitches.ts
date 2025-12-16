@@ -42,13 +42,13 @@ export const scraperSwitches: ScraperSwitches = {
   apNewsLifestyle: false, // AP News Lifestyle scraping disabled
   apNewsEntertainment: false, // AP News Entertainment scraping disabled
   yahooUSNews: false, // Yahoo US News scraping disabled
-  yahooWorldNews: true, // Yahoo World News scraping disabled
+  yahooWorldNews: false, // Yahoo World News scraping disabled
   yahooPoliticsNews: false, // Yahoo Politics News scraping disabled
   yahooFinanceNews: false, // Yahoo Finance News scraping disabled
   yahooEntertainmentNews: false, // Yahoo Entertainment News scraping disabled
   yahooLifestyleNews: false, // Yahoo Lifestyle News scraping disabled
   yahooScienceNews: false, // Yahoo Science News scraping disabled
-  cbsUS: false, // CBS US scraping enabled
+  cbsUS: true, // CBS US scraping enabled
   cbsWorld: false, // CBS World scraping enabled
   cbsPolitics: false, // CBS Politics scraping enabled
   techCrunch: false, // TechCrunch scraping enabled

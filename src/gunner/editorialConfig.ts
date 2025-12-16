@@ -11,11 +11,17 @@
 export interface EditorialFlags {
   // Main positioning flags
   mainHeadline?: boolean;
+  mainHeadlineRank?: number; // 0-10, only used when mainHeadline is true
+  mainHeadlineUntil?: string; // ISO datetime string, only used when mainHeadline is true
   frontline?: boolean;
   frontRank?: number; // 0-10, only used when frontline is true
   frontUntil?: string; // ISO datetime string, only used when frontline is true
   rightHeadline?: boolean;
+  rightHeadlineRank?: number; // 0-10, only used when rightHeadline is true
+  rightHeadlineUntil?: string; // ISO datetime string, only used when rightHeadline is true
   justIn?: boolean;
+  justInRank?: number; // 0-10, only used when justIn is true
+  justInUntil?: string; // ISO datetime string, only used when justIn is true
   
   // Just In sub-flags (only used when justIn is true)
   breakingNews?: boolean;
@@ -57,24 +63,29 @@ export const EDITORIAL_CONFIG: EditorialConfig = {
     },
     yahooUSNews: {
       mainHeadline: true,
+      mainHeadlineRank: 4,
       priority: 4,
     },
     apNewsWorld: {
       rightHeadline: true,
+      rightHeadlineRank: 4,
       featured: true,
       priority: 5,
     },
     yahooWorldNews: {
       rightHeadline: true,
+      rightHeadlineRank: 4,
       priority: 4,
     },
     apNewsPolitics: {
       justIn: true,
+      justInRank: 4,
       featured: true,
       priority: 5,
     },
     apNewsBusiness: {
       justIn: true,
+      justInRank: 4,
       priority: 3,      
       frontline: true,
       frontRank: 4,
@@ -90,15 +101,18 @@ export const EDITORIAL_CONFIG: EditorialConfig = {
     },
     cbsUS: {
       mainHeadline: true,
+      mainHeadlineRank: 4,
       priority: 4,
     },
     yahooPoliticsNews: {
       justIn: true,
+      justInRank: 4,
       featured: true,
       priority: 5,
     },
     apNewsWorld: {
       justIn: true,
+      justInRank: 4,
       featured: true,
       priority: 4,
     },
@@ -116,6 +130,7 @@ export const EDITORIAL_CONFIG: EditorialConfig = {
     },
     yahooFinanceNews: {
       justIn: true,
+      justInRank: 4,
       featured: true,
       priority: 5,
     },
@@ -124,6 +139,7 @@ export const EDITORIAL_CONFIG: EditorialConfig = {
     },
     abcNewsInternational: {
       rightHeadline: true,
+      rightHeadlineRank: 4,
       featured: true,
       priority: 5,
     },
@@ -135,6 +151,7 @@ export const EDITORIAL_CONFIG: EditorialConfig = {
     // Add run3 configurations here
     apNewsUS: {
       mainHeadline: true,
+      mainHeadlineRank: 4,
       priority: 5,
     },
     yahooEntertainmentNews: {
@@ -144,6 +161,7 @@ export const EDITORIAL_CONFIG: EditorialConfig = {
     },
     cbsUS: {
       rightHeadline: true,
+      rightHeadlineRank: 4,
       featured: true,
       priority: 5,
     },
@@ -155,10 +173,12 @@ export const EDITORIAL_CONFIG: EditorialConfig = {
     },
     apNewsBusiness: {
       justIn: true,
+      justInRank: 4,
       priority: 5,
     },
     yahooScienceNews: {
       justIn: true,
+      justInRank: 4,
       priority: 4,
     },
     yahooLifestyleNews: {
@@ -166,6 +186,7 @@ export const EDITORIAL_CONFIG: EditorialConfig = {
     },
     abcNewsUS: {
       justIn: true,
+      justInRank: 4,
       priority: 5,
     },
   },
@@ -176,6 +197,7 @@ export const EDITORIAL_CONFIG: EditorialConfig = {
     }, 
     apNewsScience: {
       justIn: true,
+      justInRank: 4,
       priority: 4,
     },
     apNewsLifestyle: {
@@ -185,6 +207,7 @@ export const EDITORIAL_CONFIG: EditorialConfig = {
     }, 
     yahooWorldNews: {
       mainHeadline: true,
+      mainHeadlineRank: 4,
       priority: 5,
     }, 
   },
@@ -217,14 +240,47 @@ export function getEditorialFlags(
     return undefined;
   }
 
-  // If frontline is true, calculate frontUntil (20 hours from publishedAt)
+  // If mainHeadline is true, calculate mainHeadlineUntil (24 hours from publishedAt)
+  if (flags.mainHeadline) {
+    const baseDate = publishedAt ? new Date(publishedAt) : new Date();
+    const mainHeadlineUntil = new Date(baseDate.getTime() + 24 * 60 * 60 * 1000).toISOString();
+    
+    return {
+      ...flags,
+      mainHeadlineUntil,
+    };
+  }
+
+  // If frontline is true, calculate frontUntil (24 hours from publishedAt)
   if (flags.frontline) {
     const baseDate = publishedAt ? new Date(publishedAt) : new Date();
-    const frontUntil = new Date(baseDate.getTime() + 20 * 60 * 60 * 1000).toISOString();
+    const frontUntil = new Date(baseDate.getTime() + 24 * 60 * 60 * 1000).toISOString();
     
     return {
       ...flags,
       frontUntil,
+    };
+  }
+
+  // If rightHeadline is true, calculate rightHeadlineUntil (24 hours from publishedAt)
+  if (flags.rightHeadline) {
+    const baseDate = publishedAt ? new Date(publishedAt) : new Date();
+    const rightHeadlineUntil = new Date(baseDate.getTime() + 24 * 60 * 60 * 1000).toISOString();
+    
+    return {
+      ...flags,
+      rightHeadlineUntil,
+    };
+  }
+
+  // If justIn is true, calculate justInUntil (24 hours from publishedAt)
+  if (flags.justIn) {
+    const baseDate = publishedAt ? new Date(publishedAt) : new Date();
+    const justInUntil = new Date(baseDate.getTime() + 24 * 60 * 60 * 1000).toISOString();
+    
+    return {
+      ...flags,
+      justInUntil,
     };
   }
 
