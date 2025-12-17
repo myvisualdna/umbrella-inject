@@ -76,13 +76,8 @@ Body: remove bylines/author names, publisher/network/agency mentions, and promo/
 
 Limits: title ≤160 chars, tickerTitle ≤45 chars, excerpt ≤160 chars (complete sentences), body ≤650 words (3–4 paragraphs), imageKeyword 1-2 words, tags = exactly 3 strings from: ${tagsList}. If any field exceeds its limit, shorten it to fit.
 
-imageKeyword rules:
-- 1–4 words max
-- Use concrete, photographable subjects
-- Prefer exact names: people, places, organizations (in that priority order)
-- Avoid abstract concepts, emotions, verbs, adjectives, and dates
-- Use neutral, Wikipedia-style naming
-- Do not summarize the article
+imageKeyword: Prefer 1–3 words; use 4 only if it’s a single proper name/landmark/organization; MUST appear verbatim in article text. Prefer: Person > Org/Product > Place > Named event > Concrete object. Avoid generic topics/abstract words/verbs/dates; no adjectives unless proper name/model. Output only phrase.
+
 
 Article:
 Title: ${filtered.title}
