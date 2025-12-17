@@ -33,29 +33,29 @@ export interface ScraperSwitches {
  * Modify these values to enable/disable scrapers
  */
 export const scraperSwitches: ScraperSwitches = {
-  apNewsUS: false, // AP News US scraping disabled
+  apNewsUS: true, // AP News US scraping disabled
   apNewsWorld: true, // AP News World scraping disabled
-  apNewsPolitics: false, // AP News Politics scraping disabled
-  apNewsBusiness: false, // AP News Business scraping disabled
-  apNewsScience: false, // AP News Science scraping disabled
-  apNewsTechnology: false, // AP News Technology scraping disabled
-  apNewsLifestyle: false, // AP News Lifestyle scraping disabled
-  apNewsEntertainment: false, // AP News Entertainment scraping disabled
-  yahooUSNews: false, // Yahoo US News scraping disabled
-  yahooWorldNews: false, // Yahoo World News scraping disabled
+  apNewsPolitics: true, // AP News Politics scraping disabled
+  apNewsBusiness: true, // AP News Business scraping disabled
+  apNewsScience: true, // AP News Science scraping disabled
+  apNewsTechnology: true, // AP News Technology scraping disabled
+  apNewsLifestyle: true, // AP News Lifestyle scraping disabled
+  apNewsEntertainment: true, // AP News Entertainment scraping disabled
+  yahooUSNews: true, // Yahoo US News scraping disabled
+  yahooWorldNews: true, // Yahoo World News scraping disabled
   yahooPoliticsNews: true, // Yahoo Politics News scraping disabled
-  yahooFinanceNews: false, // Yahoo Finance News scraping disabled
-  yahooEntertainmentNews: false, // Yahoo Entertainment News scraping disabled
-  yahooLifestyleNews: false, // Yahoo Lifestyle News scraping disabled
-  yahooScienceNews: false, // Yahoo Science News scraping disabled
-  cbsUS: false, // CBS US scraping enabled
-  cbsWorld: false, // CBS World scraping enabled
-  cbsPolitics: false, // CBS Politics scraping enabled
-  techCrunch: false, // TechCrunch scraping enabled
-  abcNewsUS: false, // ABC News US scraping disabled
-  abcNewsInternational: false, // ABC News International scraping disabled
-  abcNewsBusiness: false, // ABC News Business scraping disabled
-  abcNewsTechnology: false, // ABC News Technology scraping disabled
+  yahooFinanceNews: true, // Yahoo Finance News scraping disabled
+  yahooEntertainmentNews: true, // Yahoo Entertainment News scraping disabled
+  yahooLifestyleNews: true, // Yahoo Lifestyle News scraping disabled
+  yahooScienceNews: true, // Yahoo Science News scraping disabled
+  cbsUS: true, // CBS US scraping enabled
+  cbsWorld: true, // CBS World scraping enabled
+  cbsPolitics: true, // CBS Politics scraping enabled
+  techCrunch: true, // TechCrunch scraping enabled
+  abcNewsUS: true, // ABC News US scraping disabled
+  abcNewsInternational: true, // ABC News International scraping disabled
+  abcNewsBusiness: true, // ABC News Business scraping disabled
+  abcNewsTechnology: true, // ABC News Technology scraping disabled
 };
 
 /**
