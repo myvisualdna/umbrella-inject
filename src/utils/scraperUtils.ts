@@ -87,7 +87,7 @@ export function getResultFolderForSource(source: string): string {
     yahooUSNews: "[us]yahooNews",
     yahooWorldNews: "[world]yahooNews",
     yahooPoliticsNews: "[politics]yahooNews",
-    yahooFinanceNews: "[finance]yahooNews",
+    yahooFinanceNews: "[business]yahooNews",
     yahooEntertainmentNews: "[entertainment]yahooNews",
     yahooLifestyleNews: "[lifestyle]yahooNews",
     yahooScienceNews: "[science]yahooNews",

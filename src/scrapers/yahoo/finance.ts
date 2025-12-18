@@ -77,8 +77,8 @@ export async function scrapeYahooNewsFinance(limit: number = 4): Promise<void> {
     }
   }
 
-  const outputDir = path.join(process.cwd(), "results", "[finance]yahooNews");
-  const folderName = "[finance]yahooNews";
+  const outputDir = path.join(process.cwd(), "results", "[business]yahooNews");
+  const folderName = "[business]yahooNews";
   const category = extractCategoryFromFolder(folderName);
 
   const homepageItemsWithCategory = items.map((item) => ({
