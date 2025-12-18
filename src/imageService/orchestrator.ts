@@ -85,14 +85,7 @@ export async function processArticleWithImage(
     return null;
   }
   
-  logger.debug("ChatGPT response parsed successfully", {
-    hasTitle: !!parsedResponse.title,
-    hasTickerTitle: !!parsedResponse.tickerTitle,
-    hasExcerpt: !!parsedResponse.excerpt,
-    hasBody: !!parsedResponse.body,
-    hasImageKeyword: !!parsedResponse.imageKeyword,
-    tagsCount: parsedResponse.tags?.length || 0,
-  });
+  logger.debug("ChatGPT response parsed successfully");
 
   // Step 2: Fetch image using imageKeyword
   console.log("🖼️  Image search started");

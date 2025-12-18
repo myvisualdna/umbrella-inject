@@ -27,7 +27,7 @@ let tagCache: Map<string, string> | null = null;
 /**
  * Path to the tags cache file
  */
-const CACHE_FILE_PATH = path.join(process.cwd(), "collected", "sanity-tags.json");
+const CACHE_FILE_PATH = path.join(process.cwd(), "src", "utils", "data", "sanity-tags.json");
 
 /**
  * Loads tags from the JSON cache file

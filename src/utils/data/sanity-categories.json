@@ -1,0 +1,45 @@
+{
+  "lastUpdated": "2025-12-18T03:46:34.182Z",
+  "categories": [
+    {
+      "_id": "u33QJibha6huVhlQtjqT9d",
+      "slug": "business",
+      "name": "Business"
+    },
+    {
+      "_id": "u33QJibha6huVhlQtjqTSt",
+      "slug": "entertainment",
+      "name": "Entertainment"
+    },
+    {
+      "_id": "2Vg0FriQDcTVb6bNTAitWD",
+      "slug": "lifestyle",
+      "name": "Lifestyle"
+    },
+    {
+      "_id": "u33QJibha6huVhlQtjqSta",
+      "slug": "politics",
+      "name": "Politics"
+    },
+    {
+      "_id": "u33QJibha6huVhlQtjqTJG",
+      "slug": "science",
+      "name": "Science"
+    },
+    {
+      "_id": "C1LxEpW3WzEdSGxjekTYmE",
+      "slug": "tech",
+      "name": "Tech"
+    },
+    {
+      "_id": "2Vg0FriQDcTVb6bNTAitMP",
+      "slug": "us",
+      "name": "US"
+    },
+    {
+      "_id": "2Vg0FriQDcTVb6bNTAitQh",
+      "slug": "world",
+      "name": "World"
+    }
+  ]
+}

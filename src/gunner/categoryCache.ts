@@ -27,7 +27,7 @@ let categoryCache: Map<string, string> | null = null;
 /**
  * Path to the categories cache file
  */
-const CACHE_FILE_PATH = path.join(process.cwd(), "collected", "sanity-categories.json");
+const CACHE_FILE_PATH = path.join(process.cwd(), "src", "utils", "data", "sanity-categories.json");
 
 /**
  * Loads categories from the JSON cache file
