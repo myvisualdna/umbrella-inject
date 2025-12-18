@@ -1,4 +1,4 @@
-name: Run 2 (WEEKENDS ONLY) - 12:07pm EST
+name: Run 5 (WEEKENDS ONLY) - 12:07pm EST
 
 on:
   workflow_dispatch: {}
@@ -10,9 +10,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  run2_weekends:
+  run5_weekends:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+
     env:
       CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
       CHATGPT_MIDDLEWARE_ENABLED: ${{ secrets.CHATGPT_MIDDLEWARE_ENABLED }}
@@ -31,9 +32,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+
       - run: npm ci
       - run: npm run run:run2
