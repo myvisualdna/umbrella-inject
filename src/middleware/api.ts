@@ -15,7 +15,7 @@ import { cleanArticleBody } from "./cleanArticleBody";
  * @returns Array of tag title strings
  */
 function getAvailableTags(): string[] {
-  const tagsFilePath = path.join(process.cwd(), "collected", "sanity-tags.json");
+  const tagsFilePath = path.join(process.cwd(), "src", "utils", "data", "sanity-tags.json");
 
   try {
     if (!fs.existsSync(tagsFilePath)) {

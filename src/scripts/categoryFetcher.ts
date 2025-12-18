@@ -92,10 +92,10 @@ async function fetchCategories(): Promise<void> {
       })),
     };
 
-    // Ensure collected directory exists
-    const collectedDir = path.join(process.cwd(), "collected");
-    if (!fs.existsSync(collectedDir)) {
-      fs.mkdirSync(collectedDir, { recursive: true });
+    // Ensure data directory exists
+    const dataDir = path.join(process.cwd(), "src", "utils", "data");
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
     }
 
     // Save to JSON file

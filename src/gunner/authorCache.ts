@@ -28,7 +28,7 @@ let authorCache: Map<string, string> | null = null;
 /**
  * Path to the authors cache file
  */
-const CACHE_FILE_PATH = path.join(process.cwd(), "collected", "sanity-authors.json");
+const CACHE_FILE_PATH = path.join(process.cwd(), "src", "utils", "data", "sanity-authors.json");
 
 /**
  * Loads authors from the JSON cache file
