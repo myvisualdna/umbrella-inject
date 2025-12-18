@@ -1,0 +1,41 @@
+name: Run 4 (WEEKDAYS) - 9:07pm EST
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # 21:07 EST -> 02:07 UTC next day
+    # To cover Mon-Fri 21:07 EST, this must run Tue-Sat in UTC.
+    - cron: "7 2 * * 2-6"
+
+concurrency:
+  group: news-ingestion-pipeline
+  cancel-in-progress: false
+
+jobs:
+  run4:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
+      CHATGPT_MIDDLEWARE_ENABLED: ${{ secrets.CHATGPT_MIDDLEWARE_ENABLED }}
+      CHATGPT_MODEL: ${{ secrets.CHATGPT_MODEL }}
+      CHATGPT_REQUEST_DELAY_MS: ${{ secrets.CHATGPT_REQUEST_DELAY_MS }}
+      CRON_SCHEDULE: ${{ secrets.CRON_SCHEDULE }}
+      NEXT_PUBLIC_SANITY_DATASET: ${{ secrets.NEXT_PUBLIC_SANITY_DATASET }}
+      NEXT_PUBLIC_SANITY_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_SANITY_PROJECT_ID }}
+      NODE_ENV: ${{ secrets.NODE_ENV }}
+      PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+      PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+      SANITY_API_READ_TOKEN: ${{ secrets.SANITY_API_READ_TOKEN }}
+      SANITY_API_WRITE_TOKEN: ${{ secrets.SANITY_API_WRITE_TOKEN }}
+      SANITY_GUNNER_ENABLED: ${{ secrets.SANITY_GUNNER_ENABLED }}
+      WIKIMEDIA_USER_AGENT: ${{ secrets.WIKIMEDIA_USER_AGENT }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run run:run4
