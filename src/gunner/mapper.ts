@@ -148,33 +148,9 @@ function mapImageToCover(
     cover.creditProvider = "Wikimedia Commons"; // Always "Wikimedia Commons" for Wikimedia images
     cover.creditLicense = image.licenseShortName; // LicenseShortName -> creditLicense
     cover.creditSourceUrl = image.sourcePageUrl; // File page URL -> creditSourceUrl
-
-    // Legacy field for backward compatibility
-    if (image.artist || image.source) {
-      const creditParts: string[] = [];
-      if (image.artist) {
-        creditParts.push(image.artist);
-      }
-      if (image.source) {
-        creditParts.push(`via ${image.source}`);
-      }
-      cover.imageSource = creditParts.join(" / ");
-    }
   } else {
     // For Pexels/Pixabay, use existing logic
     cover.alt = image.authorName || imageKeyword || "Article cover image";
-
-    // Add image source/credit if available
-    if (image.authorName || image.source) {
-      const creditParts: string[] = [];
-      if (image.authorName) {
-        creditParts.push(image.authorName);
-      }
-      if (image.source) {
-        creditParts.push(`via ${image.source}`);
-      }
-      cover.imageSource = creditParts.join(" / ");
-    }
 
     // For non-Wikimedia sources, set credit fields if available
     if (image.authorName) {

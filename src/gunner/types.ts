@@ -42,8 +42,6 @@ export interface SanityCover {
   creditAuthor?: string;
   creditSourceUrl?: string;
   creditLicense?: string;
-  // Legacy field (kept for backward compatibility)
-  imageSource?: string;
 }
 
 /**
