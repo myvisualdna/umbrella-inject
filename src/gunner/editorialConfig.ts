@@ -240,10 +240,10 @@ export function getEditorialFlags(
     return undefined;
   }
 
-  // If mainHeadline is true, calculate mainHeadlineUntil (24 hours from publishedAt)
+  // If mainHeadline is true, calculate mainHeadlineUntil (72 hours from publishedAt)
   if (flags.mainHeadline) {
     const baseDate = publishedAt ? new Date(publishedAt) : new Date();
-    const mainHeadlineUntil = new Date(baseDate.getTime() + 24 * 60 * 60 * 1000).toISOString();
+    const mainHeadlineUntil = new Date(baseDate.getTime() + 72 * 60 * 60 * 1000).toISOString();
     
     return {
       ...flags,
@@ -251,10 +251,10 @@ export function getEditorialFlags(
     };
   }
 
-  // If frontline is true, calculate frontUntil (24 hours from publishedAt)
+  // If frontline is true, calculate frontUntil (72 hours from publishedAt)
   if (flags.frontline) {
     const baseDate = publishedAt ? new Date(publishedAt) : new Date();
-    const frontUntil = new Date(baseDate.getTime() + 24 * 60 * 60 * 1000).toISOString();
+    const frontUntil = new Date(baseDate.getTime() + 72 * 60 * 60 * 1000).toISOString();
     
     return {
       ...flags,
@@ -262,10 +262,10 @@ export function getEditorialFlags(
     };
   }
 
-  // If rightHeadline is true, calculate rightHeadlineUntil (24 hours from publishedAt)
+  // If rightHeadline is true, calculate rightHeadlineUntil (72 hours from publishedAt)
   if (flags.rightHeadline) {
     const baseDate = publishedAt ? new Date(publishedAt) : new Date();
-    const rightHeadlineUntil = new Date(baseDate.getTime() + 24 * 60 * 60 * 1000).toISOString();
+    const rightHeadlineUntil = new Date(baseDate.getTime() + 72 * 60 * 60 * 1000).toISOString();
     
     return {
       ...flags,
@@ -273,10 +273,10 @@ export function getEditorialFlags(
     };
   }
 
-  // If justIn is true, calculate justInUntil (24 hours from publishedAt)
+  // If justIn is true, calculate justInUntil (72 hours from publishedAt)
   if (flags.justIn) {
     const baseDate = publishedAt ? new Date(publishedAt) : new Date();
-    const justInUntil = new Date(baseDate.getTime() + 24 * 60 * 60 * 1000).toISOString();
+    const justInUntil = new Date(baseDate.getTime() + 72 * 60 * 60 * 1000).toISOString();
     
     return {
       ...flags,
