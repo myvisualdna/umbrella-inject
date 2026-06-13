@@ -16,7 +16,9 @@
     "sync-categories": "ts-node src/scripts/categoryFetcher.ts",
     "sync-tags": "ts-node src/scripts/tagFetcher.ts",
     "sync-authors": "ts-node src/scripts/authorFetcher.ts",
-    "sync-all": "ts-node src/scripts/syncAll.ts"
+    "sync-all": "ts-node src/scripts/syncAll.ts",
+    "audit:scrape": "ts-node src/scripts/auditScrape.ts",
+    "normalize:audit-output": "ts-node src/scripts/normalizeAuditOutput.ts"
   },
   "keywords": [],
   "author": "",

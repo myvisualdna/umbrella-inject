@@ -28,6 +28,8 @@ export const DROP_LINE_PATTERNS: RegExp[] = [
   // --- CBS/Publisher boilerplate ---
   /^\s*updated on:\s*/i,
   /^\s*\/\s*[a-z0-9 .-]+news\s*$/i, // e.g. "/ CBS News"
+  /^\s*in:\s*$/i,
+  /^\s*in:\s+[A-Za-z .'-]+,?\s*$/i,
   /^\s*edited by\s*$/i,
   /^\s*the associated press\s*$/i,
   /^\s*contributed to this report\.?\s*$/i,

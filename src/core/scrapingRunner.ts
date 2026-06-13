@@ -78,12 +78,34 @@ function formatSourceName(source: SourceKey): string {
  * Dispatches scraping requests to the appropriate scraper function
  * @param source - The source key from ScraperSwitches
  * @param count - Number of articles to scrape
+ * @param options.skipEnabledCheck - When true, run even if scraper switch is off (audit use)
  */
-async function scrapeSource(source: SourceKey, count: number): Promise<void> {
-  // Check if scraper is enabled
-  if (!isScraperEnabled(source)) {
-    return; // Silently skip disabled scrapers
+export async function runSourceScraper(
+  source: SourceKey,
+  count: number,
+  options?: { skipEnabledCheck?: boolean }
+): Promise<void> {
+  if (!options?.skipEnabledCheck && !isScraperEnabled(source)) {
+    return;
   }
+  await scrapeSourceImpl(source, count);
+}
+
+/**
+ * Reads the latest scraped articles array for a source from results/
+ */
+export function readScrapedArticles(source: SourceKey): any[] {
+  return getLatestArticlesFromSource(source);
+}
+
+async function scrapeSource(source: SourceKey, count: number): Promise<void> {
+  if (!isScraperEnabled(source)) {
+    return;
+  }
+  await scrapeSourceImpl(source, count);
+}
+
+async function scrapeSourceImpl(source: SourceKey, count: number): Promise<void> {
 
   try {
     switch (source) {
