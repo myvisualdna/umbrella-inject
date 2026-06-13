@@ -189,6 +189,33 @@ export function getLatestArticlesFromSource(source: string): any[] {
 }
 
 /**
+ * Returns the path to the most recent result JSON file for a source, or null
+ */
+export function getLatestResultFilePath(source: string): string | null {
+  try {
+    const folderName = getResultFolderForSource(source);
+    if (!folderName) return null;
+
+    const outputDir = path.join(process.cwd(), "results", folderName);
+    if (!fs.existsSync(outputDir)) return null;
+
+    const filePrefix = getFilePrefixForSource(source);
+    const files = fs.readdirSync(outputDir);
+    const jsonFiles = files
+      .filter((file) => file.startsWith(filePrefix) && file.endsWith(".json"))
+      .map((file) => ({
+        path: path.join(outputDir, file),
+        stats: fs.statSync(path.join(outputDir, file)),
+      }))
+      .sort((a, b) => b.stats.mtimeMs - a.stats.mtimeMs);
+
+    return jsonFiles.length > 0 ? jsonFiles[0].path : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Saves collected articles to the collected folder
  * Removes the 'articleItem' field from each article before saving
  */

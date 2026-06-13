@@ -11,10 +11,17 @@ import {
   cleanupOldJsonFiles,
   saveScrapedData,
 } from "../../utils/scraperUtils";
+import {
+  buildScrapedArticleSuccess,
+  buildScrapedArticleFailure,
+} from "../../utils/buildScrapedArticle";
 
 interface APNewsWorldScrapedArticle extends APNewsArticleDetails {
   articleItem: APNewsArticleItem;
   scrapedAt: string;
+  sourceKey: string;
+  source: string;
+  publishedAt: string | null;
   success: boolean;
   error?: string;
 }
@@ -42,12 +49,9 @@ export async function scrapeAPNewsWorld(limit: number = 5): Promise<void> {
     try {
       const details = await scrapeAPNewsArticleDetails(item.url);
 
-      articles.push({
-        ...details,
-        articleItem: item,
-        scrapedAt: new Date().toISOString(),
-        success: true,
-      });
+      articles.push(
+        buildScrapedArticleSuccess(details, "apNewsWorld", item) as typeof articles[number]
+      );
 
       successCount++;
     } catch (error) {
@@ -61,17 +65,9 @@ export async function scrapeAPNewsWorld(limit: number = 5): Promise<void> {
           : error
       );
 
-      articles.push({
-        url: item.url,
-        title: item.title || "Unknown",
-        excerpt: "",
-        category: null,
-        body: "",
-        articleItem: item,
-        scrapedAt: new Date().toISOString(),
-        success: false,
-        error: errorMessage,
-      });
+      articles.push(
+        buildScrapedArticleFailure("apNewsWorld", item, item, errorMessage) as typeof articles[number]
+      );
 
       failureCount++;
     }

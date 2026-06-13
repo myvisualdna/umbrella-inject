@@ -5,4 +5,5 @@ dist/
 .DS_Store
 results/
 collected/
+audit-output/
 

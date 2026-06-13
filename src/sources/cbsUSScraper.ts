@@ -1,6 +1,8 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { logger } from "../config/logger";
+import { cleanArticleBody } from "../middleware/cleanArticleBody";
+import { extractPublishedAt } from "../utils/extractPublishedAt";
 
 export interface CBSUSArticleItem {
   title: string;
@@ -14,6 +16,7 @@ export interface CBSUSArticleDetails {
   excerpt: string;
   category: string | null;
   body: string;
+  publishedAt: string | null;
 }
 
 /**
@@ -206,7 +209,9 @@ export async function scrapeCBSUSArticleDetails(
       .filter(Boolean);
   }
 
-  const body = bodyParagraphs.join("\n\n");
+  const rawBody = bodyParagraphs.join("\n\n");
+  const body = cleanArticleBody(rawBody) ?? "";
+  const { value: publishedAt } = extractPublishedAt($);
 
   return {
     url: articleUrl,
@@ -214,6 +219,7 @@ export async function scrapeCBSUSArticleDetails(
     excerpt,
     category,
     body,
+    publishedAt,
   };
 }
 
