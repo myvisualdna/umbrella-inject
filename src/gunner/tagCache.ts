@@ -19,6 +19,12 @@ interface TagCacheFile {
   }>;
 }
 
+export interface SanityTagCatalogItem {
+  id: string;
+  slug: string;
+  title: string;
+}
+
 /**
  * In-memory cache loaded from file
  */
@@ -147,4 +153,49 @@ export function resolveTagReferences(
  */
 export function getTagCachePath(): string {
   return CACHE_FILE_PATH;
+}
+
+/**
+ * Returns the current tag catalog as normalized slug/title/id items.
+ * Used by the AI worker to constrain tag selection.
+ */
+export function getTagCatalog(): SanityTagCatalogItem[] {
+  if (!fs.existsSync(CACHE_FILE_PATH)) {
+    logger.warn(`Tag cache file not found: ${CACHE_FILE_PATH}`);
+    return [];
+  }
+
+  try {
+    const fileContent = fs.readFileSync(CACHE_FILE_PATH, "utf-8");
+    const data: TagCacheFile = JSON.parse(fileContent);
+    if (!Array.isArray(data.tags)) {
+      return [];
+    }
+
+    return data.tags
+      .filter((tag) => Boolean(tag._id && tag.slug))
+      .map((tag) => ({
+        id: tag._id,
+        slug: String(tag.slug).toLowerCase().trim(),
+        title: String(tag.title ?? tag.slug).trim(),
+      }))
+      .filter((tag) => tag.slug.length > 0);
+  } catch (error) {
+    logger.error("Error reading tag catalog:", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return [];
+  }
+}
+
+export function getAllowedTagSlugs(): string[] {
+  return getTagCatalog().map((tag) => tag.slug);
+}
+
+/**
+ * Clears the in-memory tag cache so the next read reloads from disk.
+ * Useful after a cache refresh updates the JSON file.
+ */
+export function clearTagCache(): void {
+  tagCache = null;
 }

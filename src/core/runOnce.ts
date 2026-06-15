@@ -1,8 +1,11 @@
 /**
- * One-off run executor for GitHub Actions
- * 
- * Executes a single run and exits (perfect for scheduled workflows)
- * Usage: npm run run:run1 (which calls: ts-node src/core/runOnce.ts --run=run1)
+ * Legacy one-off run executor for the direct-to-Sanity pipeline.
+ *
+ * This entrypoint is guarded by ALLOW_LEGACY_DIRECT_SANITY=true and should not
+ * be used for the default staged Fetcher -> AI -> Gunner pipeline.
+ *
+ * Usage (legacy only):
+ *   ALLOW_LEGACY_DIRECT_SANITY=true npm run legacy:run:run1
  */
 
 import { logger } from "../config/logger";
@@ -20,6 +23,13 @@ function parseRunId(): RunId | null {
 }
 
 async function main() {
+  if (process.env.ALLOW_LEGACY_DIRECT_SANITY !== "true") {
+    logger.error(
+      "Legacy direct-to-Sanity pipeline is disabled. Set ALLOW_LEGACY_DIRECT_SANITY=true to re-enable. Use Fetcher Worker scripts instead."
+    );
+    process.exit(1);
+  }
+
   const runId = parseRunId();
 
   if (!runId) {

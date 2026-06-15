@@ -1,27 +1,17 @@
 {
-  "lastUpdated": "2025-12-18T03:46:35.362Z",
+  "lastUpdated": "2026-06-15T04:14:03.976Z",
   "authors": [
     {
-      "_id": "a20900d0-e0da-4b6a-95af-62857cb70643",
-      "slug": "andres-n",
-      "name": "Andres N",
-      "email": "myvisualdna@gmail.com"
+      "_id": "59d2b194-17eb-4526-ad4f-35aaf3ea874c",
+      "slug": "ashley-simmons",
+      "name": "Ashley Simmons",
+      "email": "theuxvision@gmail.com"
     },
     {
-      "_id": "1e4025fc-ee10-4d0b-9b28-dbb32832361e",
-      "slug": "arthur-morgan",
-      "name": "Arthur Morgan"
-    },
-    {
-      "_id": "f8c87cab-4c23-4f6f-8f56-64aa1fc68c53",
-      "slug": "john-hodgson",
-      "name": "John Hodgson",
-      "email": "theuxflow@gmail.com"
-    },
-    {
-      "_id": "80662aad-2a9e-49d2-b277-1e0bed0cc38c",
-      "slug": "sarah-pattison",
-      "name": "Sarah Pattison"
+      "_id": "f9870898-8d8d-4a0c-aaf9-4b750d359a2a",
+      "slug": "the-creator",
+      "name": "The Creator",
+      "email": "anglenetworkus@gmail.com"
     }
   ]
 }

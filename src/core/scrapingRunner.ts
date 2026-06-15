@@ -41,6 +41,15 @@ import { scrapeABCNewsInternational } from "../scrapers/abcnews/world";
 import { scrapeABCNewsBusiness } from "../scrapers/abcnews/business";
 import { scrapeABCNewsTechnology } from "../scrapers/abcnews/technology";
 
+function assertLegacyDirectSanityAllowed(): void {
+  if (process.env.ALLOW_LEGACY_DIRECT_SANITY === "true") {
+    return;
+  }
+  throw new Error(
+    "Legacy direct-to-Sanity pipeline is disabled. Set ALLOW_LEGACY_DIRECT_SANITY=true only for explicit legacy runs."
+  );
+}
+
 /**
  * Formats source name for display (removes common suffixes for cleaner output)
  */
@@ -205,6 +214,7 @@ async function scrapeSourceImpl(source: SourceKey, count: number): Promise<void>
  * @param run - The run configuration to execute
  */
 export async function executeRun(run: RunConfig): Promise<void> {
+  assertLegacyDirectSanityAllowed();
   logger.info(
     `🚀 Executing run ${run.id} (${run.label})`
   );
@@ -313,6 +323,7 @@ export function getRunById(id: RunConfig["id"]): RunConfig {
  * @param id - The run ID ("run1" | "run2" | "run3" | "run4")
  */
 export async function executeRunById(id: RunConfig["id"]): Promise<void> {
+  assertLegacyDirectSanityAllowed();
   if (!isRunEnabled(id)) {
     logger.warn(`⏸️  Run ${id} is disabled and will not be executed`);
     return;

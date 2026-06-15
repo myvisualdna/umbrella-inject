@@ -121,3 +121,11 @@ export function resolveCategoryReference(
 export function getCategoryCachePath(): string {
   return CACHE_FILE_PATH;
 }
+
+/**
+ * Clears the in-memory category cache so the next read reloads from disk.
+ * Useful after a cache refresh updates the JSON file.
+ */
+export function clearCategoryCache(): void {
+  categoryCache = null;
+}

@@ -1,8 +1,10 @@
 import * as fs from "fs";
 import * as path from "path";
+import { parseSourceKeysEnv } from "../config/sourceKeyFilters";
 import { canonicalizeUrl, normalizeStoryCandidate } from "../normalization/normalizeStoryCandidate";
 import { getSourceMetadata } from "../normalization/sourceMetadata";
 import { validateNormalizedCandidate } from "../normalization/validateNormalizedCandidate";
+import type { SourceKey } from "../config/scrapingControl";
 import type {
   DuplicateCandidateRecord,
   NormalizationSummary,
@@ -21,15 +23,23 @@ interface ScrapingAuditFile {
 const INPUT_DIR = path.join(process.cwd(), "audit-output", "scraping");
 const OUTPUT_DIR = path.join(process.cwd(), "audit-output", "normalized");
 
-function listInputFiles(): string[] {
+function listInputFiles(selectedSourceKeys: Set<SourceKey> | null): string[] {
   if (!fs.existsSync(INPUT_DIR)) {
     throw new Error(`Input directory not found: ${INPUT_DIR}`);
   }
 
-  return fs
+  const files = fs
     .readdirSync(INPUT_DIR)
     .filter((name) => name.endsWith(".json") && name !== "summary.json")
     .sort();
+
+  if (!selectedSourceKeys) {
+    return files;
+  }
+
+  return files.filter((name) =>
+    selectedSourceKeys.has(name.replace(/\.json$/, "") as SourceKey)
+  );
 }
 
 function writeJson(fileName: string, data: unknown): void {
@@ -113,7 +123,11 @@ function buildMarkdownReport(summary: NormalizationSummary): string {
 }
 
 function main(): void {
-  const files = listInputFiles();
+  const selectedSourceKeys = parseSourceKeysEnv(
+    process.env.NORMALIZE_SOURCE_KEYS,
+    "NORMALIZE_SOURCE_KEYS"
+  );
+  const files = listInputFiles(selectedSourceKeys);
   const validCandidates: NormalizedStoryCandidate[] = [];
   const rejectedCandidates: RejectedCandidate[] = [];
   const duplicates: DuplicateCandidateRecord[] = [];

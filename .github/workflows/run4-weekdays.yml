@@ -1,7 +1,41 @@
 name: Run 4 (WEEKDAYS) - 9:07pm EST
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run fetcher in dry-run mode"
+        required: true
+        default: "true"
+        type: choice
+        options: ["true", "false"]
+      run_ai:
+        description: "Run AI worker stage"
+        required: true
+        default: "false"
+        type: choice
+        options: ["true", "false"]
+      run_gunner:
+        description: "Run Gunner worker stage"
+        required: true
+        default: "false"
+        type: choice
+        options: ["true", "false"]
+      fetcher_limit:
+        description: "Optional FETCHER_MAX_TOTAL_ARTICLES override"
+        required: false
+        default: ""
+        type: string
+      ai_limit:
+        description: "Optional AI_PROCESS_LIMIT override"
+        required: false
+        default: "1"
+        type: string
+      gunner_limit:
+        description: "Optional GUNNER_LIMIT override"
+        required: false
+        default: "1"
+        type: string
   schedule:
     # 21:07 EST -> 02:07 UTC next day
     # To cover Mon-Fri 21:07 EST, this must run Tue-Sat in UTC.
@@ -12,24 +46,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  run4:
+  fetcher_run4:
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.NEWS_PIPELINE_SCHEDULED_ENABLED == 'true' && vars.NEWS_FETCHER_ENABLED == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
-      CHATGPT_MIDDLEWARE_ENABLED: ${{ secrets.CHATGPT_MIDDLEWARE_ENABLED }}
-      CHATGPT_MODEL: ${{ secrets.CHATGPT_MODEL }}
-      CHATGPT_REQUEST_DELAY_MS: ${{ secrets.CHATGPT_REQUEST_DELAY_MS }}
-      CRON_SCHEDULE: ${{ secrets.CRON_SCHEDULE }}
-      NEXT_PUBLIC_SANITY_DATASET: ${{ secrets.NEXT_PUBLIC_SANITY_DATASET }}
-      NEXT_PUBLIC_SANITY_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_SANITY_PROJECT_ID }}
-      NODE_ENV: ${{ secrets.NODE_ENV }}
-      PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-      PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
-      SANITY_API_READ_TOKEN: ${{ secrets.SANITY_API_READ_TOKEN }}
-      SANITY_API_WRITE_TOKEN: ${{ secrets.SANITY_API_WRITE_TOKEN }}
-      SANITY_GUNNER_ENABLED: ${{ secrets.SANITY_GUNNER_ENABLED }}
-      WIKIMEDIA_USER_AGENT: ${{ secrets.WIKIMEDIA_USER_AGENT }}
+      NODE_ENV: production
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      FETCHER_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+      FETCHER_WRITE_ENABLED: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == 'true' && 'false' || 'true' }}
+      FETCHER_MAX_TOTAL_ARTICLES: ${{ github.event_name == 'workflow_dispatch' && inputs.fetcher_limit || vars.FETCHER_MAX_TOTAL_ARTICLES }}
 
     steps:
       - uses: actions/checkout@v4
@@ -39,3 +66,56 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run run:run4
+
+  ai_run4:
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run_ai == 'true') || (github.event_name != 'workflow_dispatch' && vars.NEWS_PIPELINE_SCHEDULED_ENABLED == 'true' && vars.NEWS_AI_WORKER_ENABLED == 'true') }}
+    needs: fetcher_run4
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_ENV: production
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      AI_PROVIDER: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == 'true' && 'mock' || 'openai' }}
+      AI_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+      AI_PROCESS_LIMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.ai_limit || vars.AI_PROCESS_LIMIT || '3' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run ai:process-pending
+
+  gunner_run4:
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run_gunner == 'true') || (github.event_name != 'workflow_dispatch' && vars.NEWS_PIPELINE_SCHEDULED_ENABLED == 'true' && vars.NEWS_GUNNER_WORKER_ENABLED == 'true') }}
+    needs: ai_run4
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_ENV: production
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      NEXT_PUBLIC_SANITY_PROJECT_ID: ${{ vars.SANITY_PROJECT_ID }}
+      NEXT_PUBLIC_SANITY_DATASET: ${{ vars.SANITY_DATASET }}
+      SANITY_API_WRITE_TOKEN: ${{ secrets.SANITY_API_WRITE_TOKEN }}
+      GUNNER_REFRESH_SANITY_CACHE: "true"
+      GUNNER_LIMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.gunner_limit || vars.GUNNER_LIMIT || '3' }}
+      GUNNER_WRITE_ENABLED: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == 'true' && 'false' || 'true' }}
+      GUNNER_PLACEHOLDER_COVER_URL: ${{ vars.GUNNER_PLACEHOLDER_COVER_URL }}
+      GUNNER_PLACEHOLDER_COVER_ALT: ${{ vars.GUNNER_PLACEHOLDER_COVER_ALT }}
+      GUNNER_PLACEHOLDER_COVER_CAPTION: ${{ vars.GUNNER_PLACEHOLDER_COVER_CAPTION }}
+      GUNNER_PLACEHOLDER_COVER_CREDIT_AUTHOR: ${{ vars.GUNNER_PLACEHOLDER_COVER_CREDIT_AUTHOR }}
+      GUNNER_PLACEHOLDER_COVER_CREDIT_SOURCE: ${{ vars.GUNNER_PLACEHOLDER_COVER_CREDIT_SOURCE }}
+      GUNNER_PLACEHOLDER_COVER_LICENSE_OR_RIGHTS: ${{ vars.GUNNER_PLACEHOLDER_COVER_LICENSE_OR_RIGHTS }}
+      GUNNER_DEFAULT_AUTHOR_ID: ${{ vars.GUNNER_DEFAULT_AUTHOR_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run gunner:create-drafts

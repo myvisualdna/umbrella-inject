@@ -1,4 +1,15 @@
 /**
+ * @deprecated LEGACY: This file belongs to the direct-to-Sanity pipeline.
+ * It is not part of the Supabase-based Fetcher Worker, AI Worker, and
+ * Gunner Worker path.
+ *
+ * In the new pipeline, homepage/editorial placement flags must not be applied
+ * automatically during ingestion. Editors set placement manually in Sanity.
+ *
+ * This file is kept for migration safety in Part 1 and should be archived
+ * in Part 2 after the new schedule is fully verified.
+ */
+/**
  * Editorial Flags Configuration
  * 
  * Defines how articles are displayed based on their run ID and origin.

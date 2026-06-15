@@ -1,43 +1,43 @@
 {
-  "lastUpdated": "2025-12-18T03:46:34.182Z",
+  "lastUpdated": "2026-06-15T04:14:03.975Z",
   "categories": [
     {
-      "_id": "u33QJibha6huVhlQtjqT9d",
+      "_id": "JVi0Tvmrmg4SpIPaUuykJD",
       "slug": "business",
       "name": "Business"
     },
     {
-      "_id": "u33QJibha6huVhlQtjqTSt",
+      "_id": "PiQZ1crlvMFHJztcYBSjpf",
       "slug": "entertainment",
       "name": "Entertainment"
     },
     {
-      "_id": "2Vg0FriQDcTVb6bNTAitWD",
+      "_id": "PiQZ1crlvMFHJztcYBSkKb",
       "slug": "lifestyle",
       "name": "Lifestyle"
     },
     {
-      "_id": "u33QJibha6huVhlQtjqSta",
+      "_id": "PiQZ1crlvMFHJztcYBSjKj",
       "slug": "politics",
       "name": "Politics"
     },
     {
-      "_id": "u33QJibha6huVhlQtjqTJG",
+      "_id": "JVi0Tvmrmg4SpIPaUuykP1",
       "slug": "science",
       "name": "Science"
     },
     {
-      "_id": "C1LxEpW3WzEdSGxjekTYmE",
+      "_id": "PiQZ1crlvMFHJztcYBSk7L",
       "slug": "tech",
       "name": "Tech"
     },
     {
-      "_id": "2Vg0FriQDcTVb6bNTAitMP",
+      "_id": "PiQZ1crlvMFHJztcYBSj33",
       "slug": "us",
       "name": "US"
     },
     {
-      "_id": "2Vg0FriQDcTVb6bNTAitQh",
+      "_id": "PiQZ1crlvMFHJztcYBSjBt",
       "slug": "world",
       "name": "World"
     }

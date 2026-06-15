@@ -1,0 +1,121 @@
+name: Manual Ingestion Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Fetcher run recipe to execute"
+        required: true
+        default: "run1"
+        type: choice
+        options: ["run1", "run2", "run3", "run4"]
+      dry_run:
+        description: "Safe mode (no Supabase writes, no Sanity writes)"
+        required: true
+        default: "true"
+        type: choice
+        options: ["true", "false"]
+      run_ai:
+        description: "Run AI worker stage"
+        required: true
+        default: "false"
+        type: choice
+        options: ["true", "false"]
+      run_gunner:
+        description: "Run Gunner worker stage"
+        required: true
+        default: "false"
+        type: choice
+        options: ["true", "false"]
+      fetcher_limit:
+        description: "Optional FETCHER_MAX_TOTAL_ARTICLES"
+        required: false
+        default: "3"
+        type: string
+      ai_limit:
+        description: "Optional AI_PROCESS_LIMIT"
+        required: false
+        default: "1"
+        type: string
+      gunner_limit:
+        description: "Optional GUNNER_LIMIT"
+        required: false
+        default: "1"
+        type: string
+
+concurrency:
+  group: news-ingestion-manual-pipeline
+  cancel-in-progress: false
+
+jobs:
+  fetcher:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_ENV: production
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      FETCHER_DRY_RUN: ${{ inputs.dry_run }}
+      FETCHER_WRITE_ENABLED: ${{ inputs.dry_run == 'true' && 'false' || 'true' }}
+      FETCHER_MAX_TOTAL_ARTICLES: ${{ inputs.fetcher_limit }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run fetcher:run -- --run=${{ inputs.run_id }}
+
+  ai:
+    if: ${{ inputs.run_ai == 'true' }}
+    needs: fetcher
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_ENV: production
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      AI_PROVIDER: ${{ inputs.dry_run == 'true' && 'mock' || 'openai' }}
+      AI_DRY_RUN: ${{ inputs.dry_run }}
+      AI_PROCESS_LIMIT: ${{ inputs.ai_limit }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run ai:process-pending
+
+  gunner:
+    if: ${{ inputs.run_gunner == 'true' }}
+    needs: ai
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_ENV: production
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      NEXT_PUBLIC_SANITY_PROJECT_ID: ${{ vars.SANITY_PROJECT_ID }}
+      NEXT_PUBLIC_SANITY_DATASET: ${{ vars.SANITY_DATASET }}
+      SANITY_API_WRITE_TOKEN: ${{ secrets.SANITY_API_WRITE_TOKEN }}
+      GUNNER_REFRESH_SANITY_CACHE: "true"
+      GUNNER_LIMIT: ${{ inputs.gunner_limit }}
+      GUNNER_WRITE_ENABLED: ${{ inputs.dry_run == 'true' && 'false' || 'true' }}
+      GUNNER_PLACEHOLDER_COVER_URL: ${{ vars.GUNNER_PLACEHOLDER_COVER_URL }}
+      GUNNER_PLACEHOLDER_COVER_ALT: ${{ vars.GUNNER_PLACEHOLDER_COVER_ALT }}
+      GUNNER_PLACEHOLDER_COVER_CAPTION: ${{ vars.GUNNER_PLACEHOLDER_COVER_CAPTION }}
+      GUNNER_PLACEHOLDER_COVER_CREDIT_AUTHOR: ${{ vars.GUNNER_PLACEHOLDER_COVER_CREDIT_AUTHOR }}
+      GUNNER_PLACEHOLDER_COVER_CREDIT_SOURCE: ${{ vars.GUNNER_PLACEHOLDER_COVER_CREDIT_SOURCE }}
+      GUNNER_PLACEHOLDER_COVER_LICENSE_OR_RIGHTS: ${{ vars.GUNNER_PLACEHOLDER_COVER_LICENSE_OR_RIGHTS }}
+      GUNNER_DEFAULT_AUTHOR_ID: ${{ vars.GUNNER_DEFAULT_AUTHOR_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run gunner:create-drafts

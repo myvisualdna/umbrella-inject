@@ -182,4 +182,12 @@ export function getAuthorCachePath(): string {
   return CACHE_FILE_PATH;
 }
 
+/**
+ * Clears the in-memory author cache so the next read reloads from disk.
+ * Useful after a cache refresh updates the JSON file.
+ */
+export function clearAuthorCache(): void {
+  authorCache = null;
+}
+
 

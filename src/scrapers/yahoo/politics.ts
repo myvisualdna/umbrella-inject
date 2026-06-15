@@ -29,7 +29,7 @@ interface YahooPoliticsScrapedArticle extends YahooArticleDetails {
 interface YahooPoliticsScrapedData {
   metadata: {
     savedAt: string;
-    source: "yahooNewsPolitics";
+    source: "yahooPoliticsNews";
     totalHomepageItems: number;
     totalArticlesScraped: number;
     totalArticlesFailed: number;
@@ -50,7 +50,7 @@ export async function scrapeYahooNewsPolitics(limit: number = 7): Promise<void> 
       const details = await scrapeYahooArticleDetails(item.url);
 
       articles.push(
-        buildScrapedArticleSuccess(details, "yahooNewsPolitics", item) as typeof articles[number]
+        buildScrapedArticleSuccess(details, "yahooPoliticsNews", item) as typeof articles[number]
       );
 
       successCount++;
@@ -66,7 +66,7 @@ export async function scrapeYahooNewsPolitics(limit: number = 7): Promise<void> 
       );
 
       articles.push(
-        buildScrapedArticleFailure("yahooNewsPolitics", item, item, errorMessage) as typeof articles[number]
+        buildScrapedArticleFailure("yahooPoliticsNews", item, item, errorMessage) as typeof articles[number]
       );
 
       failureCount++;
@@ -91,7 +91,7 @@ export async function scrapeYahooNewsPolitics(limit: number = 7): Promise<void> 
   const scrapedData: YahooPoliticsScrapedData = {
     metadata: {
       savedAt: savedAt,
-      source: "yahooNewsPolitics",
+      source: "yahooPoliticsNews",
       totalHomepageItems: items.length,
       totalArticlesScraped: successCount,
       totalArticlesFailed: failureCount,

@@ -29,7 +29,7 @@ interface YahooWorldScrapedArticle extends YahooArticleDetails {
 interface YahooWorldScrapedData {
   metadata: {
     savedAt: string;
-    source: "yahooNewsWorld";
+    source: "yahooWorldNews";
     totalHomepageItems: number;
     totalArticlesScraped: number;
     totalArticlesFailed: number;
@@ -50,7 +50,7 @@ export async function scrapeYahooNewsWorld(limit: number = 4): Promise<void> {
       const details = await scrapeYahooArticleDetails(item.url);
 
       articles.push(
-        buildScrapedArticleSuccess(details, "yahooNewsWorld", item) as typeof articles[number]
+        buildScrapedArticleSuccess(details, "yahooWorldNews", item) as typeof articles[number]
       );
 
       successCount++;
@@ -66,7 +66,7 @@ export async function scrapeYahooNewsWorld(limit: number = 4): Promise<void> {
       );
 
       articles.push(
-        buildScrapedArticleFailure("yahooNewsWorld", item, item, errorMessage) as typeof articles[number]
+        buildScrapedArticleFailure("yahooWorldNews", item, item, errorMessage) as typeof articles[number]
       );
 
       failureCount++;
@@ -91,7 +91,7 @@ export async function scrapeYahooNewsWorld(limit: number = 4): Promise<void> {
   const scrapedData: YahooWorldScrapedData = {
     metadata: {
       savedAt: savedAt,
-      source: "yahooNewsWorld",
+      source: "yahooWorldNews",
       totalHomepageItems: items.length,
       totalArticlesScraped: successCount,
       totalArticlesFailed: failureCount,

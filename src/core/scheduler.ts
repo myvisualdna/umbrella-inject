@@ -1,17 +1,19 @@
 /**
- * Scheduler that runs scraping jobs on a schedule
- * Each run is configured in SCRAPING_RUNS and executes automatically
- * 
- * For GitHub Actions, use runOnce.ts instead (npm run run:run1, etc.)
- * For local testing, use npm run run:run1, etc.
+ * Fetcher scheduler for local/dev usage.
+ *
+ * This scheduler runs the Fetcher Worker path only:
+ *   scrape -> normalize -> Supabase pending (or dry-run)
+ *
+ * It never calls legacy middleware or legacy gunner.
  */
 import cron from "node-cron";
 import { logger } from "../config/logger";
-import { executeRunById } from "./scrapingRunner";
+import { getFetcherRunOptionsFromEnv } from "../fetcherWorker/config";
+import { runFetcherBatch } from "../fetcherWorker/runFetcherBatch";
 import { SCRAPING_RUNS } from "../config/scrapingControl";
 
 function startScheduler(): void {
-  logger.info("⏰ Initializing cron scheduler...");
+  logger.info("⏰ Initializing fetcher cron scheduler...");
 
   // Default: run every 10 minutes (test mode)
   // Can be overridden with CRON_SCHEDULE environment variable
@@ -27,9 +29,10 @@ function startScheduler(): void {
       cronExpression,
       async () => {
         try {
-          await executeRunById(run.id);
+          const options = getFetcherRunOptionsFromEnv();
+          await runFetcherBatch(run, options);
         } catch (error) {
-          logger.error(`❌ Failed to execute run ${run.id}:`, {
+          logger.error(`❌ Failed to execute fetcher run ${run.id}:`, {
             error: error instanceof Error ? error.message : String(error),
             stack: error instanceof Error ? error.stack : undefined,
           });
@@ -44,9 +47,9 @@ function startScheduler(): void {
 
   const enabledRuns = SCRAPING_RUNS.filter((r) => r.enabled);
   const runIds = enabledRuns.map((r) => r.id).join(", ");
-  logger.info(`🎯 Cron scheduler started - Enabled runs: ${runIds || "none"}`);
+  logger.info(`🎯 Fetcher cron scheduler started - Enabled runs: ${runIds || "none"}`);
   logger.info(`📅 Schedule: ${cronExpression}`);
-  logger.info("💤 Process will run in background, waiting for scheduled times...");
+  logger.info("💤 Fetcher process will run in background, waiting for scheduled times...");
 }
 
 startScheduler();
