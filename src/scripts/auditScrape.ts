@@ -7,9 +7,11 @@ import * as fs from "fs";
 import * as path from "path";
 import { runSourceScraper, readScrapedArticles } from "../core/scrapingRunner";
 import { logger } from "../config/logger";
+import { parseSourceKeysEnv } from "../config/sourceKeyFilters";
 import { getLatestResultFilePath } from "../utils/scraperUtils";
 import {
   AUDIT_SOURCE_MANIFEST,
+  type AuditSourceManifestEntry,
   type ReadinessStatus,
 } from "./auditScrapeManifest";
 import {
@@ -74,6 +76,15 @@ function parseArticleLimit(): number {
 function parseSourceDelayMs(): number {
   const raw = parseInt(process.env.AUDIT_SOURCE_DELAY_MS || "2000", 10);
   return Number.isFinite(raw) && raw >= 0 ? raw : 2000;
+}
+
+function parseAuditSources(): AuditSourceManifestEntry[] {
+  const selected = parseSourceKeysEnv(process.env.AUDIT_SOURCE_KEYS, "AUDIT_SOURCE_KEYS");
+  if (!selected) {
+    return AUDIT_SOURCE_MANIFEST;
+  }
+
+  return AUDIT_SOURCE_MANIFEST.filter((entry) => selected.has(entry.sourceKey));
 }
 
 function sleep(ms: number): Promise<void> {
@@ -248,6 +259,7 @@ function buildMarkdownReport(
 async function main(): Promise<void> {
   const articleLimit = parseArticleLimit();
   const sourceDelayMs = parseSourceDelayMs();
+  const sourcesToAudit = parseAuditSources();
   const auditedAt = new Date().toISOString();
   const outputDir = path.join(process.cwd(), "audit-output", "scraping");
 
@@ -255,6 +267,7 @@ async function main(): Promise<void> {
 
   logger.info("Starting scraping-only audit");
   logger.info(`Article limit: ${articleLimit}, source delay: ${sourceDelayMs}ms`);
+  logger.info(`Sources selected: ${sourcesToAudit.length}`);
   logger.info(`CHATGPT_MIDDLEWARE_ENABLED=${process.env.CHATGPT_MIDDLEWARE_ENABLED}`);
   logger.info(`SANITY_GUNNER_ENABLED=${process.env.SANITY_GUNNER_ENABLED}`);
 
@@ -274,10 +287,10 @@ async function main(): Promise<void> {
     }
   > = [];
 
-  for (let i = 0; i < AUDIT_SOURCE_MANIFEST.length; i++) {
-    const entry = AUDIT_SOURCE_MANIFEST[i];
+  for (let i = 0; i < sourcesToAudit.length; i++) {
+    const entry = sourcesToAudit[i];
     logger.info(
-      `[${i + 1}/${AUDIT_SOURCE_MANIFEST.length}] Scraping ${entry.sourceKey} (${entry.displayName})`
+      `[${i + 1}/${sourcesToAudit.length}] Scraping ${entry.sourceKey} (${entry.displayName})`
     );
 
     const scrapeErrors: string[] = [];
@@ -359,7 +372,7 @@ async function main(): Promise<void> {
       `${entry.sourceKey}: ${audit.succeeded}/${audit.attempted} ok, readiness=${audit.readiness}`
     );
 
-    if (i < AUDIT_SOURCE_MANIFEST.length - 1 && sourceDelayMs > 0) {
+    if (i < sourcesToAudit.length - 1 && sourceDelayMs > 0) {
       await sleep(sourceDelayMs);
     }
   }
