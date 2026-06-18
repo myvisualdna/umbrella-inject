@@ -6,9 +6,9 @@ This document describes the production-safe scheduling model for the staged inge
 
 ```text
 run1/run2/run3/run4 schedules
--> Fetcher Worker (pending queue)
--> AI Worker (processed queue)
--> Gunner Worker (draft_created + Sanity draft)
+-> Fetcher Worker (batch + pending queue)
+-> AI Worker (batch constrained)
+-> Gunner Worker (batch constrained, draft_created + Sanity draft)
 ```
 
 The weekend workflow keeps existing behavior and uses the run2 source recipe.
@@ -120,6 +120,27 @@ Gunner dry-run:
 GUNNER_LIMIT=1 npm run gunner:create-drafts:dry-run
 ```
 
+## Batch handoff in GitHub Actions
+
+Use the dedicated manual guide:
+
+- [`docs/github-actions-batch-handoff.md`](github-actions-batch-handoff.md)
+
+That guide includes exact fetcher/AI/Gunner job snippets, output blocks, skip conditions, rollout order, and pause/resume instructions.
+
+Do not run real OpenAI or live Gunner writes during rollout-readiness work.
+
+## Rollout readiness commands
+
+```bash
+npm run db:verify-batch-migration
+npm run queue:health
+npm run pipeline:batch:verify
+npm run github:outputs:fetcher -- --allow-missing
+npm run github:outputs:ai -- --allow-missing
+npm run github:outputs:gunner -- --allow-missing
+```
+
 ## Pause / rollback
 
 ### Pause all scheduled stages
@@ -127,6 +148,9 @@ GUNNER_LIMIT=1 npm run gunner:create-drafts:dry-run
 Set:
 
 - `NEWS_PIPELINE_SCHEDULED_ENABLED=false`
+- `NEWS_FETCHER_ENABLED=false`
+- `NEWS_AI_WORKER_ENABLED=false`
+- `NEWS_GUNNER_WORKER_ENABLED=false`
 
 ### Pause specific stage
 
@@ -145,6 +169,16 @@ ALLOW_LEGACY_DIRECT_SANITY=true npm run legacy:run:run1
 ```
 
 Do not use legacy path for default production scheduling.
+
+## Resume safely
+
+1. Confirm intended pause flags.
+2. Run `npm run db:verify-batch-migration`.
+3. Run `npm run queue:health`.
+4. Re-enable Fetcher only and validate one batch cycle.
+5. Re-enable AI only after separate real OpenAI validation.
+6. Re-enable Gunner only after separate live draft validation.
+7. Keep strict batch count envs enabled in scheduled workflows.
 
 ## Why legacy middleware/gunner remain disabled
 

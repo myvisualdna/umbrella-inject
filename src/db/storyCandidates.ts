@@ -31,6 +31,8 @@ export interface StoryCandidateRow {
   scraped_at: string;
   raw_payload: unknown;
   status: "pending";
+  ingestion_batch_id?: string | null;
+  ingestion_run_id?: string | null;
 }
 
 export interface CandidateValidationResult {
@@ -50,8 +52,14 @@ export interface InsertStoryCandidatesResult {
   failed: InsertFailure[];
 }
 
+export interface InsertStoryCandidatesOptions {
+  ingestionBatchId?: string | null;
+  ingestionRunId?: string | null;
+}
+
 export function toStoryCandidateRow(
-  candidate: NormalizedStoryCandidate
+  candidate: NormalizedStoryCandidate,
+  options?: InsertStoryCandidatesOptions
 ): StoryCandidateRow {
   return {
     source_key: candidate.sourceKey,
@@ -65,6 +73,8 @@ export function toStoryCandidateRow(
     scraped_at: candidate.scrapedAt,
     raw_payload: candidate.rawPayload,
     status: "pending",
+    ingestion_batch_id: options?.ingestionBatchId ?? null,
+    ingestion_run_id: options?.ingestionRunId ?? null,
   };
 }
 
@@ -194,13 +204,15 @@ export async function getExistingSourceUrls(
 }
 
 export async function insertStoryCandidate(
-  candidate: NormalizedStoryCandidate
+  candidate: NormalizedStoryCandidate,
+  options?: InsertStoryCandidatesOptions
 ): Promise<InsertStoryCandidatesResult> {
-  return insertStoryCandidates([candidate]);
+  return insertStoryCandidates([candidate], options);
 }
 
 export async function insertStoryCandidates(
-  candidates: NormalizedStoryCandidate[]
+  candidates: NormalizedStoryCandidate[],
+  options?: InsertStoryCandidatesOptions
 ): Promise<InsertStoryCandidatesResult> {
   if (candidates.length === 0) {
     return {
@@ -214,7 +226,7 @@ export async function insertStoryCandidates(
   const sourceUrls = candidates.map((c) => c.sourceUrl);
   const existingBefore = await getExistingSourceUrls(sourceUrls);
 
-  const rows = candidates.map(toStoryCandidateRow);
+  const rows = candidates.map((candidate) => toStoryCandidateRow(candidate, options));
   const supabase = getSupabaseClient();
 
   const { error } = await supabase
@@ -261,8 +273,9 @@ export async function insertStoryCandidates(
  * Only returns rows with status='pending'; never touches other statuses.
  */
 export async function getPendingCandidates(
-  limit: number,
-  sourceKeys?: Set<string> | null
+  limit?: number | null,
+  sourceKeys?: Set<string> | null,
+  batchId?: string | null
 ): Promise<WorkerStoryCandidate[]> {
   const supabase = getSupabaseClient();
 
@@ -270,11 +283,18 @@ export async function getPendingCandidates(
     .from("story_candidates")
     .select(WORKER_CANDIDATE_COLUMNS)
     .eq("status", "pending")
-    .order("created_at", { ascending: true })
-    .limit(limit);
+    .order("created_at", { ascending: true });
+
+  if (batchId) {
+    query = query.eq("ingestion_batch_id", batchId);
+  }
 
   if (sourceKeys && sourceKeys.size > 0) {
     query = query.in("source_key", Array.from(sourceKeys));
+  }
+
+  if (typeof limit === "number" && Number.isFinite(limit) && limit > 0) {
+    query = query.limit(limit);
   }
 
   const { data, error } = await query;
@@ -410,6 +430,8 @@ export interface ProcessedCandidateRow {
   processed_payload: ProcessedArticlePayload | null;
   raw_payload: unknown;
   sanity_document_id: string | null;
+  ingestion_batch_id?: string | null;
+  ingestion_run_id?: string | null;
 }
 
 /**
@@ -417,8 +439,9 @@ export interface ProcessedCandidateRow {
  * Read-only: never mutates any row.
  */
 export async function getProcessedCandidates(
-  limit: number,
-  sourceKeys?: Set<string> | null
+  limit?: number | null,
+  sourceKeys?: Set<string> | null,
+  batchId?: string | null
 ): Promise<ProcessedCandidateRow[]> {
   const supabase = getSupabaseClient();
 
@@ -426,11 +449,18 @@ export async function getProcessedCandidates(
     .from("story_candidates")
     .select(GUNNER_CANDIDATE_COLUMNS)
     .eq("status", "processed")
-    .order("updated_at", { ascending: true })
-    .limit(limit);
+    .order("updated_at", { ascending: true });
+
+  if (batchId) {
+    query = query.eq("ingestion_batch_id", batchId);
+  }
 
   if (sourceKeys && sourceKeys.size > 0) {
     query = query.in("source_key", Array.from(sourceKeys));
+  }
+
+  if (typeof limit === "number" && Number.isFinite(limit) && limit > 0) {
+    query = query.limit(limit);
   }
 
   const { data, error } = await query;
@@ -510,4 +540,48 @@ export async function markCandidateGunnerFailed(
   if (error) {
     throw new Error(`Failed to record gunner failure for ${id}: ${error.message}`);
   }
+}
+
+export interface BatchCandidateStatusCounts {
+  pending: number;
+  processing: number;
+  processed: number;
+  draft_created: number;
+  failed: number;
+}
+
+export async function getBatchCandidateStatusCounts(
+  batchId: string
+): Promise<BatchCandidateStatusCounts> {
+  const supabase = getSupabaseClient();
+  const statuses: Array<keyof BatchCandidateStatusCounts> = [
+    "pending",
+    "processing",
+    "processed",
+    "draft_created",
+    "failed",
+  ];
+
+  const result: BatchCandidateStatusCounts = {
+    pending: 0,
+    processing: 0,
+    processed: 0,
+    draft_created: 0,
+    failed: 0,
+  };
+
+  for (const status of statuses) {
+    const { count, error } = await supabase
+      .from("story_candidates")
+      .select("id", { count: "exact", head: true })
+      .eq("ingestion_batch_id", batchId)
+      .eq("status", status);
+
+    if (error) {
+      throw new Error(`Failed to count ${status} candidates for batch ${batchId}: ${error.message}`);
+    }
+    result[status] = count ?? 0;
+  }
+
+  return result;
 }

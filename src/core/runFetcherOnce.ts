@@ -53,6 +53,7 @@ async function main(): Promise<void> {
   const result = await runFetcherBatch(run, options);
 
   logger.info(`✅ Finished fetcher run ${run.id}`, {
+    batchId: result.batchId,
     dryRun: result.dryRun,
     writeEnabled: result.writeEnabled,
     sourcesSelected: result.sourcesSelected.length,

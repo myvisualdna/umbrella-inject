@@ -17,7 +17,7 @@ It never calls OpenAI, never runs the AI worker, and never publishes.
 
 ## Cache refresh before processing
 
-Before candidate mapping, the worker refreshes local Sanity caches by default:
+Before candidate mapping, the worker can refresh local Sanity caches:
 
 - categories
 - tags
@@ -25,11 +25,21 @@ Before candidate mapping, the worker refreshes local Sanity caches by default:
 
 This avoids stale-reference failures when Sanity IDs rotate.
 
-- Default behavior: `GUNNER_REFRESH_SANITY_CACHE=true`
-- Disable only for offline testing: `GUNNER_REFRESH_SANITY_CACHE=false`
+- Write mode default: `GUNNER_REFRESH_SANITY_CACHE=true`
+- Dry-run default: `GUNNER_REFRESH_SANITY_CACHE=false` (avoids noisy local cache file diffs)
+- Explicit env value always overrides defaults
 
-Startup logs include a non-sensitive summary: project id, dataset, and loaded
-counts for categories/tags/authors. No token values are printed.
+If dry-run needs live cache data and local cache files are missing, run cache sync explicitly:
+
+```bash
+npm run sync-all
+```
+
+Or opt in to refresh during dry-run:
+
+```bash
+GUNNER_REFRESH_SANITY_CACHE=true npm run gunner:create-drafts:dry-run
+```
 
 ## What it does
 
@@ -94,7 +104,7 @@ GUNNER_WRITE_ENABLED=true GUNNER_LIMIT=1 npm run gunner:create-drafts
 | `GUNNER_SOURCE_KEYS`       | (none)  | Comma-separated source-key filter.                              |
 | `GUNNER_CANDIDATE_ID`      | (none)  | Process exactly one specific candidate id.                       |
 | `GUNNER_OVERWRITE_DRAFT`   | `false` | Use `createOrReplace` instead of `createIfNotExists`.           |
-| `GUNNER_REFRESH_SANITY_CACHE` | `true` | Refresh category/tag/author caches at startup.               |
+| `GUNNER_REFRESH_SANITY_CACHE` | write=true / dry-run=false | Refresh category/tag/author caches at startup. Explicit env overrides default. |
 | `GUNNER_DEFAULT_AUTHOR_ID` | (none)  | If set, attach this author reference to the draft.              |
 | `GUNNER_PLACEHOLDER_COVER_SOURCE` | `external` | Placeholder cover source.                         |
 | `GUNNER_PLACEHOLDER_COVER_URL` | built-in placeholder URL | Placeholder cover URL.                    |

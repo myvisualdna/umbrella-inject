@@ -36,7 +36,15 @@
     "ai:verify": "ts-node src/scripts/verifyStep3.ts",
     "gunner:create-drafts": "ts-node src/scripts/createSanityDraftsFromProcessed.ts",
     "gunner:create-drafts:dry-run": "ts-node src/scripts/createSanityDraftsFromProcessed.ts --dry-run",
-    "gunner:verify": "ts-node src/scripts/verifyStep4.ts"
+    "gunner:verify": "ts-node src/scripts/verifyStep4.ts",
+    "batch:verify": "ts-node src/scripts/verifyBatchOrchestration.ts",
+    "pipeline:dry-run": "FETCHER_DRY_RUN=true FETCHER_WRITE_ENABLED=false FETCHER_MAX_TOTAL_ARTICLES=3 npm run run:run1 && AI_PROVIDER=mock AI_DRY_RUN=true AI_PROCESS_LIMIT=1 npm run ai:process-pending:dry-run && GUNNER_WRITE_ENABLED=false GUNNER_LIMIT=1 npm run gunner:create-drafts:dry-run",
+    "db:verify-batch-migration": "ts-node src/scripts/verifyBatchMigration.ts",
+    "github:outputs:fetcher": "ts-node src/scripts/emitFetcherGithubOutputs.ts",
+    "github:outputs:ai": "ts-node src/scripts/emitAiGithubOutputs.ts",
+    "github:outputs:gunner": "ts-node src/scripts/emitGunnerGithubOutputs.ts",
+    "queue:health": "ts-node src/scripts/queueHealth.ts",
+    "pipeline:batch:verify": "ts-node src/scripts/verifyBatchPipelineReadiness.ts"
   },
   "keywords": [],
   "author": "",

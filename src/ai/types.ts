@@ -59,6 +59,8 @@ export interface WorkerStoryCandidate {
   scraped_at: string;
   status: StoryCandidateStatus;
   attempt_count: number;
+  ingestion_batch_id?: string | null;
+  ingestion_run_id?: string | null;
 }
 
 export type AiProviderName = "mock" | "openai";

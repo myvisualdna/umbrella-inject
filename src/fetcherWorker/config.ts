@@ -31,10 +31,13 @@ export function getFetcherRunIdFromEnv(): string | null {
 }
 
 export function getFetcherRunOptionsFromEnv(): FetcherRunOptions {
+  const workflowRunId =
+    process.env.FETCHER_WORKFLOW_RUN_ID?.trim() || process.env.GITHUB_RUN_ID?.trim() || null;
   return {
     dryRun: parseBooleanEnv(process.env.FETCHER_DRY_RUN, true),
     writeEnabled: parseBooleanEnv(process.env.FETCHER_WRITE_ENABLED, false),
     maxTotalArticles: parseOptionalPositiveInt(process.env.FETCHER_MAX_TOTAL_ARTICLES),
     sourceKeysFilter: parseFetcherSourceKeys(process.env.FETCHER_SOURCE_KEYS),
+    workflowRunId,
   };
 }

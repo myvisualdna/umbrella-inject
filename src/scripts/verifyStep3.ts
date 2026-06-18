@@ -33,6 +33,8 @@ function buildCandidate(
     scraped_at: "2026-06-13T01:00:00.000Z",
     status: "pending",
     attempt_count: 0,
+    ingestion_batch_id: null,
+    ingestion_run_id: null,
     ...overrides,
   };
 }
