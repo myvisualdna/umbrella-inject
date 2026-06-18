@@ -102,6 +102,8 @@ export interface GunnerCandidate {
   processed_payload: ProcessedArticlePayload | null;
   raw_payload: unknown;
   sanity_document_id: string | null;
+  ingestion_batch_id?: string | null;
+  ingestion_run_id?: string | null;
 }
 
 export interface GunnerMappingResult {

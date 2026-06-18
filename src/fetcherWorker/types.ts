@@ -6,6 +6,7 @@ export interface FetcherRunOptions {
   writeEnabled: boolean;
   sourceKeysFilter: Set<SourceKey> | null;
   maxTotalArticles: number | null;
+  workflowRunId: string | null;
 }
 
 export interface FetcherSourceSelection {
@@ -20,6 +21,7 @@ export interface FetcherRejectedCandidate {
 }
 
 export interface FetcherRunResult {
+  batchId: string;
   runId: RunConfig["id"];
   runLabel: string;
   dryRun: boolean;
@@ -31,6 +33,8 @@ export interface FetcherRunResult {
   rejectedCount: number;
   duplicateCount: number;
   candidatesInserted: number;
+  scrapedCount: number;
+  insertedCount: number;
   supabaseUpdated: boolean;
   openAiCalled: false;
   sanityCalled: false;
@@ -39,6 +43,7 @@ export interface FetcherRunResult {
   reportPaths: {
     summaryJson: string;
     markdownAudit: string;
+    latestBatchJson: string;
   };
   normalizedValidCandidates: NormalizedStoryCandidate[];
   rejectedCandidates: FetcherRejectedCandidate[];

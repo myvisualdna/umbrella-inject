@@ -84,3 +84,19 @@ Part 2 migration artifacts:
 - Controlled production enablement of stage gates
 - Operational monitoring/alerts for queue depth and stage failures
 - Final legacy archive/removal once sustained production stability is confirmed
+
+## Batch-aware orchestration follow-up
+
+Part 2 introduced staged jobs but still allowed queue-wide selection. Batch-aware orchestration closes that gap:
+
+- Fetcher now emits `batchId` and writes `audit-output/fetcher-worker/latest-batch.json`
+- AI can be constrained by `AI_BATCH_ID`
+- Gunner can be constrained by `GUNNER_BATCH_ID`
+- Each stage emits a machine-readable latest-batch artifact for downstream jobs
+
+Scheduled workflows should pass batch outputs forward so one run processes one batch end-to-end:
+
+1. Fetcher outputs `batch_id` and `inserted_count`
+2. AI receives `AI_BATCH_ID` + `AI_EXPECTED_COUNT`
+3. AI outputs `processed_count`
+4. Gunner receives `GUNNER_BATCH_ID` + `GUNNER_EXPECTED_COUNT`

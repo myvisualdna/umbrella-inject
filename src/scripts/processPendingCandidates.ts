@@ -19,10 +19,16 @@ import { validateProcessedArticle } from "../ai/validateProcessedArticle";
 import { parseEnabledSourceKeys } from "../config/ingestionSources";
 import {
   claimCandidateForProcessing,
+  getBatchCandidateStatusCounts,
   getPendingCandidates,
   markCandidateFailed,
   markCandidateProcessed,
 } from "../db/storyCandidates";
+import {
+  markStoryCandidateBatchAiCompleted,
+  markStoryCandidateBatchAiProcessing,
+  markStoryCandidateBatchFailed,
+} from "../db/storyCandidateBatches";
 import { hasSupabaseEnv } from "../db/supabaseClient";
 
 const DEFAULT_LIMIT = 1;
@@ -32,13 +38,18 @@ const OUTPUT_DIR = path.join(process.cwd(), "audit-output", "ai-worker");
 const SUMMARY_PATH = path.join(OUTPUT_DIR, "summary.json");
 const REPORT_PATH = path.join(OUTPUT_DIR, "AI_WORKER_AUDIT.md");
 const PREVIEW_PATH = path.join(OUTPUT_DIR, "processed-preview.json");
+const LATEST_BATCH_PATH = path.join(OUTPUT_DIR, "latest-batch.json");
 
 interface WorkerConfig {
   provider: AiProviderName;
-  limit: number;
+  limit: number | null;
+  explicitLimit: boolean;
   dryRun: boolean;
   sourceKeys: Set<string> | null;
   allowLargeBatch: boolean;
+  batchId: string | null;
+  expectedCount: number | null;
+  strictBatchCounts: boolean;
 }
 
 interface CandidateOutcome {
@@ -69,11 +80,22 @@ interface WorkerSummary {
   dryRun: boolean;
   openAiCalled: boolean;
   supabaseUpdated: boolean;
-  limit: number;
+  limit: number | null;
   sourceKeyFilter: string[] | null;
+  batchMode: boolean;
+  batchId: string | null;
+  expectedCount: number | null;
+  strictBatchCounts: boolean;
+  selectedCount: number;
   candidatesSelected: number;
   candidatesProcessed: number;
+  processedCount: number;
   candidatesFailed: number;
+  failedCount: number;
+  remainingPendingInBatch: number | null;
+  remainingProcessingInBatch: number | null;
+  batchCountsReconciled: boolean | null;
+  reconcileTotal: number | null;
   candidateIds: string[];
   sourceKeys: string[];
   outcomes: CandidateOutcome[];
@@ -85,15 +107,36 @@ function parseBoolFlag(value: string | undefined): boolean {
 
 function parseConfig(argv: string[]): WorkerConfig {
   const provider = parseProviderName(process.env.AI_PROVIDER);
-
-  const rawLimit = parseInt(process.env.AI_PROCESS_LIMIT || String(DEFAULT_LIMIT), 10);
-  const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : DEFAULT_LIMIT;
+  const rawLimit = process.env.AI_PROCESS_LIMIT;
+  const parsedLimit = rawLimit ? parseInt(rawLimit, 10) : Number.NaN;
+  const explicitLimit = Number.isFinite(parsedLimit) && parsedLimit > 0;
+  const batchId = process.env.AI_BATCH_ID?.trim() || null;
+  const limit =
+    explicitLimit && Number.isFinite(parsedLimit) && parsedLimit > 0
+      ? parsedLimit
+      : batchId
+        ? null
+        : DEFAULT_LIMIT;
 
   const dryRun = argv.includes("--dry-run") || parseBoolFlag(process.env.AI_DRY_RUN);
   const sourceKeys = parseEnabledSourceKeys(process.env.AI_SOURCE_KEYS);
   const allowLargeBatch = parseBoolFlag(process.env.AI_ALLOW_LARGE_BATCH);
+  const expectedRaw = process.env.AI_EXPECTED_COUNT;
+  const parsedExpected = expectedRaw ? parseInt(expectedRaw, 10) : Number.NaN;
+  const expectedCount = Number.isFinite(parsedExpected) && parsedExpected >= 0 ? parsedExpected : null;
+  const strictBatchCounts = parseBoolFlag(process.env.AI_STRICT_BATCH_COUNTS);
 
-  return { provider, limit, dryRun, sourceKeys, allowLargeBatch };
+  return {
+    provider,
+    limit,
+    explicitLimit,
+    dryRun,
+    sourceKeys,
+    allowLargeBatch,
+    batchId,
+    expectedCount,
+    strictBatchCounts,
+  };
 }
 
 function ensureOutputDir(): void {
@@ -111,7 +154,10 @@ function printBanner(config: WorkerConfig): void {
   console.log("Step 3 AI Worker");
   console.log(`Mode:     ${mode}`);
   console.log(`Provider: ${providerLabel}`);
-  console.log(`Limit:    ${config.limit}`);
+  console.log(`Limit:    ${config.limit ?? "all for selected queue scope"}`);
+  if (config.batchId) {
+    console.log(`Batch ID: ${config.batchId}`);
+  }
   if (config.sourceKeys) {
     console.log(`Sources:  ${Array.from(config.sourceKeys).join(", ")}`);
   }
@@ -123,6 +169,20 @@ function writeOutputs(summary: WorkerSummary, previews: PreviewEntry[]): void {
   ensureOutputDir();
   fs.writeFileSync(SUMMARY_PATH, `${JSON.stringify(summary, null, 2)}\n`, "utf-8");
   fs.writeFileSync(PREVIEW_PATH, `${JSON.stringify(previews, null, 2)}\n`, "utf-8");
+  fs.writeFileSync(
+    LATEST_BATCH_PATH,
+    `${JSON.stringify(
+      {
+        batchId: summary.batchId,
+        processedCount: summary.processedCount,
+        failedCount: summary.failedCount,
+        remainingPendingInBatch: summary.remainingPendingInBatch,
+      },
+      null,
+      2
+    )}\n`,
+    "utf-8"
+  );
 
   const lines: string[] = [];
   lines.push("# AI Worker Audit");
@@ -136,6 +196,10 @@ function writeOutputs(summary: WorkerSummary, previews: PreviewEntry[]): void {
   lines.push(`- OpenAI called: ${summary.openAiCalled}`);
   lines.push(`- Supabase updated: ${summary.supabaseUpdated}`);
   lines.push(`- Limit: ${summary.limit}`);
+  lines.push(`- Batch mode: ${summary.batchMode}`);
+  lines.push(`- Batch id: ${summary.batchId ?? "none"}`);
+  lines.push(`- Expected count: ${summary.expectedCount ?? "none"}`);
+  lines.push(`- Strict batch counts: ${summary.strictBatchCounts}`);
   lines.push(
     `- Source key filter: ${
       summary.sourceKeyFilter ? summary.sourceKeyFilter.join(", ") : "none"
@@ -147,6 +211,10 @@ function writeOutputs(summary: WorkerSummary, previews: PreviewEntry[]): void {
   lines.push(`- Candidates selected: ${summary.candidatesSelected}`);
   lines.push(`- Candidates processed: ${summary.candidatesProcessed}`);
   lines.push(`- Candidates failed: ${summary.candidatesFailed}`);
+  lines.push(`- Remaining pending in batch: ${summary.remainingPendingInBatch ?? "n/a"}`);
+  lines.push(`- Remaining processing in batch: ${summary.remainingProcessingInBatch ?? "n/a"}`);
+  lines.push(`- Batch counts reconciled: ${summary.batchCountsReconciled ?? "n/a"}`);
+  lines.push(`- Reconcile total: ${summary.reconcileTotal ?? "n/a"}`);
   lines.push(`- Candidate IDs: ${summary.candidateIds.join(", ") || "none"}`);
   lines.push(`- Source keys: ${summary.sourceKeys.join(", ") || "none"}`);
   lines.push("");
@@ -274,7 +342,12 @@ async function main(): Promise<void> {
   const config = parseConfig(process.argv.slice(2));
   printBanner(config);
 
-  if (config.limit > LARGE_BATCH_THRESHOLD && !config.allowLargeBatch) {
+  if (
+    config.limit &&
+    config.explicitLimit &&
+    config.limit > LARGE_BATCH_THRESHOLD &&
+    !config.allowLargeBatch
+  ) {
     console.error(
       `Refusing to process ${config.limit} candidates. Limit is capped at ${LARGE_BATCH_THRESHOLD} unless AI_ALLOW_LARGE_BATCH=true.`
     );
@@ -299,7 +372,11 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const candidates = await getPendingCandidates(config.limit, config.sourceKeys);
+  if (config.batchId && !config.dryRun) {
+    await markStoryCandidateBatchAiProcessing(config.batchId);
+  }
+
+  const candidates = await getPendingCandidates(config.limit, config.sourceKeys, config.batchId);
 
   const previews: PreviewEntry[] = [];
   const outcomes: CandidateOutcome[] = [];
@@ -313,6 +390,35 @@ async function main(): Promise<void> {
   const candidatesFailed = outcomes.filter((o) => o.failed).length;
   const supabaseUpdated = !config.dryRun && (candidatesProcessed > 0 || candidatesFailed > 0);
 
+  let remainingPendingInBatch: number | null = null;
+  let remainingProcessingInBatch: number | null = null;
+  let batchCountsReconciled: boolean | null = null;
+  let reconcileTotal: number | null = null;
+
+  if (config.batchId) {
+    const counts = await getBatchCandidateStatusCounts(config.batchId);
+    remainingPendingInBatch = counts.pending;
+    remainingProcessingInBatch = counts.processing;
+    const processedTotal = counts.processed + counts.draft_created;
+    const failedTotal = counts.failed;
+    reconcileTotal = processedTotal + failedTotal + remainingPendingInBatch;
+    batchCountsReconciled =
+      config.expectedCount === null ? null : config.expectedCount === reconcileTotal;
+
+    if (!config.dryRun) {
+      const isComplete =
+        remainingPendingInBatch === 0 &&
+        remainingProcessingInBatch === 0 &&
+        (config.expectedCount === null || batchCountsReconciled === true);
+      if (isComplete) {
+        await markStoryCandidateBatchAiCompleted(config.batchId, {
+          aiProcessedCount: processedTotal,
+          aiFailedCount: failedTotal,
+        });
+      }
+    }
+  }
+
   const summary: WorkerSummary = {
     generatedAt: new Date().toISOString(),
     provider: config.provider,
@@ -320,10 +426,21 @@ async function main(): Promise<void> {
     openAiCalled: config.provider === "openai" && !config.dryRun && candidates.length > 0,
     supabaseUpdated,
     limit: config.limit,
+    batchMode: Boolean(config.batchId),
+    batchId: config.batchId,
+    expectedCount: config.expectedCount,
+    strictBatchCounts: config.strictBatchCounts,
     sourceKeyFilter: config.sourceKeys ? Array.from(config.sourceKeys) : null,
+    selectedCount: candidates.length,
     candidatesSelected: candidates.length,
     candidatesProcessed,
+    processedCount: candidatesProcessed,
     candidatesFailed,
+    failedCount: candidatesFailed,
+    remainingPendingInBatch,
+    remainingProcessingInBatch,
+    batchCountsReconciled,
+    reconcileTotal,
     candidateIds: candidates.map((c) => c.id),
     sourceKeys: Array.from(new Set(candidates.map((c) => c.source_key))),
     outcomes,
@@ -335,9 +452,24 @@ async function main(): Promise<void> {
   console.log(`Candidates selected:  ${summary.candidatesSelected}`);
   console.log(`Candidates processed: ${summary.candidatesProcessed}`);
   console.log(`Candidates failed:    ${summary.candidatesFailed}`);
+  console.log(`Batch mode:           ${summary.batchMode}`);
+  console.log(`Batch id:             ${summary.batchId ?? "none"}`);
+  console.log(`Remaining pending:    ${summary.remainingPendingInBatch ?? "n/a"}`);
+  console.log(`Reconciled:           ${summary.batchCountsReconciled ?? "n/a"}`);
   console.log(`Supabase updated:     ${summary.supabaseUpdated}`);
   console.log(`OpenAI called:        ${summary.openAiCalled}`);
   console.log(`Reports:              ${path.relative(process.cwd(), OUTPUT_DIR)}`);
+
+  if (config.batchId && config.expectedCount !== null && summary.batchCountsReconciled === false) {
+    const msg = `AI batch ${config.batchId} expected ${config.expectedCount}, got reconcile total ${summary.reconcileTotal}`;
+    console.error(msg);
+    if (!config.dryRun) {
+      await markStoryCandidateBatchFailed(config.batchId, msg);
+    }
+    if (config.strictBatchCounts) {
+      process.exit(1);
+    }
+  }
 
   if (candidatesFailed > 0 && candidatesProcessed === 0) {
     process.exit(1);
@@ -345,6 +477,13 @@ async function main(): Promise<void> {
 }
 
 main().catch((error) => {
+  const batchId = process.env.AI_BATCH_ID?.trim();
+  if (batchId && !parseBoolFlag(process.env.AI_DRY_RUN)) {
+    void markStoryCandidateBatchFailed(
+      batchId,
+      error instanceof Error ? error.message : String(error)
+    );
+  }
   console.error("AI worker failed:", error);
   process.exit(1);
 });

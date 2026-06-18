@@ -18,6 +18,7 @@ async function main(): Promise<void> {
     writeEnabled: false,
     sourceKeysFilter: null,
     maxTotalArticles: Number.parseInt(process.env.FETCHER_VERIFY_MAX_TOTAL_ARTICLES || "3", 10),
+    workflowRunId: null,
   });
 
   assert(result.dryRun === true, "Expected dryRun=true");
@@ -26,6 +27,7 @@ async function main(): Promise<void> {
   assert(result.sanityCalled === false, "Expected sanityCalled=false");
   assert(result.legacyMiddlewareCalled === false, "Expected legacyMiddlewareCalled=false");
   assert(result.legacyGunnerCalled === false, "Expected legacyGunnerCalled=false");
+  assert(result.batchId.startsWith("dry-run-"), "Expected dry-run batch id");
 
   console.log("verifyFetcherWorker: PASS");
   console.log(
