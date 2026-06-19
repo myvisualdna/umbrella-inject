@@ -1,5 +1,5 @@
-import { resolveCategoryReference } from "../gunner/categoryCache";
-import { resolveTagReference } from "../gunner/tagCache";
+import { resolveCategoryReference } from "../sanity/categoryCache";
+import { resolveTagReference } from "../sanity/tagCache";
 import type { SanityReference } from "./types";
 
 export interface ResolvedReferences {

@@ -106,12 +106,6 @@ jobs:
       GUNNER_REFRESH_SANITY_CACHE: "true"
       GUNNER_LIMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.gunner_limit || vars.GUNNER_LIMIT || '3' }}
       GUNNER_WRITE_ENABLED: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == 'true' && 'false' || 'true' }}
-      GUNNER_PLACEHOLDER_COVER_URL: ${{ vars.GUNNER_PLACEHOLDER_COVER_URL }}
-      GUNNER_PLACEHOLDER_COVER_ALT: ${{ vars.GUNNER_PLACEHOLDER_COVER_ALT }}
-      GUNNER_PLACEHOLDER_COVER_CAPTION: ${{ vars.GUNNER_PLACEHOLDER_COVER_CAPTION }}
-      GUNNER_PLACEHOLDER_COVER_CREDIT_AUTHOR: ${{ vars.GUNNER_PLACEHOLDER_COVER_CREDIT_AUTHOR }}
-      GUNNER_PLACEHOLDER_COVER_CREDIT_SOURCE: ${{ vars.GUNNER_PLACEHOLDER_COVER_CREDIT_SOURCE }}
-      GUNNER_PLACEHOLDER_COVER_LICENSE_OR_RIGHTS: ${{ vars.GUNNER_PLACEHOLDER_COVER_LICENSE_OR_RIGHTS }}
       GUNNER_DEFAULT_AUTHOR_ID: ${{ vars.GUNNER_DEFAULT_AUTHOR_ID }}
     steps:
       - uses: actions/checkout@v4

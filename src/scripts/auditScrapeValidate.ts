@@ -1,7 +1,7 @@
 import {
   CUTOFF_SECTION_PATTERNS,
   DROP_LINE_PATTERNS,
-} from "../middleware/cleaningPatterns";
+} from "../scraping/cleaningPatterns";
 import type { ReadinessStatus } from "./auditScrapeManifest";
 
 export interface ScrapedArticleRow {

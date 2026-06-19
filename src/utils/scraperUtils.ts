@@ -214,34 +214,3 @@ export function getLatestResultFilePath(source: string): string | null {
     return null;
   }
 }
-
-/**
- * Saves collected articles to the collected folder
- * Removes the 'articleItem' field from each article before saving
- */
-export function saveCollectedArticles(
-  runId: string,
-  articles: any[]
-): string {
-  const collectedDir = path.join(process.cwd(), "collected");
-  
-  if (!fs.existsSync(collectedDir)) {
-    fs.mkdirSync(collectedDir, { recursive: true });
-  }
-
-  // Remove 'articleItem' field from each article
-  const cleanedArticles = articles.map(({ articleItem, ...article }) => article);
-
-  const outputPath = path.join(collectedDir, `[${runId}]articles.json`);
-  const data = {
-    runId,
-    collectedAt: new Date().toISOString(),
-    totalArticles: cleanedArticles.length,
-    articles: cleanedArticles,
-  };
-
-  fs.writeFileSync(outputPath, JSON.stringify(data, null, 2), "utf-8");
-
-  return outputPath;
-}
-

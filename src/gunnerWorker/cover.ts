@@ -15,37 +15,41 @@ export interface PlaceholderCoverResult {
   warnings: string[];
 }
 
-const DEFAULT_PLACEHOLDER_COVER_URL =
+/** Supabase Storage: angle-media/angle-placeholders/theangle-cover-placeholder.png */
+export const DEFAULT_PLACEHOLDER_COVER_URL =
   "https://zmpglszxzgwsnvwhsxiv.supabase.co/storage/v1/object/sign/angle-media/angle-placeholders/theangle-cover-placeholder.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zM2U0NjY2ZC1hNjk5LTRmYzEtYjE3ZC1hODgzMjA4MzlmMjEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhbmdsZS1tZWRpYS9hbmdsZS1wbGFjZWhvbGRlcnMvdGhlYW5nbGUtY292ZXItcGxhY2Vob2xkZXIucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4MTQ3MTU3NywiZXhwIjoyMDk2ODMxNTc3fQ.haUmVJtIcwggr4LEn7YlufatpmhMoL52oNd4nSUc_Wo";
 
-function asNonEmpty(value: string | undefined, fallback: string): string {
-  const normalized = value?.trim();
-  return normalized && normalized.length > 0 ? normalized : fallback;
-}
+export const DEFAULT_PLACEHOLDER_COVER_ALT =
+  "The Angle: News, analysis and perspective.";
+export const DEFAULT_PLACEHOLDER_COVER_CAPTION =
+  "The Angle: News, analysis and perspective.";
+export const DEFAULT_PLACEHOLDER_COVER_CREDIT_AUTHOR = "Angle";
+export const DEFAULT_PLACEHOLDER_COVER_CREDIT_SOURCE = "Angle";
+export const DEFAULT_PLACEHOLDER_COVER_LICENSE_OR_RIGHTS = "The Angle Media Network.";
 
 export function parsePlaceholderCoverConfig(
   env: NodeJS.ProcessEnv = process.env
 ): PlaceholderCoverConfig {
-  const sourceRaw = asNonEmpty(env.GUNNER_PLACEHOLDER_COVER_SOURCE, "external");
+  const sourceRaw = env.GUNNER_PLACEHOLDER_COVER_SOURCE?.trim() || "external";
   const source: "external" = sourceRaw === "external" ? "external" : "external";
 
   return {
     source,
-    externalUrl: asNonEmpty(env.GUNNER_PLACEHOLDER_COVER_URL, DEFAULT_PLACEHOLDER_COVER_URL),
-    alt: asNonEmpty(
-      env.GUNNER_PLACEHOLDER_COVER_ALT,
-      "The Angle: News, analysis and perspective."
-    ),
-    caption: asNonEmpty(
-      env.GUNNER_PLACEHOLDER_COVER_CAPTION,
-      "The Angle: News, analysis and perspective."
-    ),
-    creditAuthor: asNonEmpty(env.GUNNER_PLACEHOLDER_COVER_CREDIT_AUTHOR, "Angle"),
-    creditSource: asNonEmpty(env.GUNNER_PLACEHOLDER_COVER_CREDIT_SOURCE, "Angle"),
-    licenseOrRights: asNonEmpty(
-      env.GUNNER_PLACEHOLDER_COVER_LICENSE_OR_RIGHTS,
-      "The Angle Media Network."
-    ),
+    externalUrl:
+      env.GUNNER_PLACEHOLDER_COVER_URL?.trim() || DEFAULT_PLACEHOLDER_COVER_URL,
+    alt: env.GUNNER_PLACEHOLDER_COVER_ALT?.trim() || DEFAULT_PLACEHOLDER_COVER_ALT,
+    caption:
+      env.GUNNER_PLACEHOLDER_COVER_CAPTION?.trim() ||
+      DEFAULT_PLACEHOLDER_COVER_CAPTION,
+    creditAuthor:
+      env.GUNNER_PLACEHOLDER_COVER_CREDIT_AUTHOR?.trim() ||
+      DEFAULT_PLACEHOLDER_COVER_CREDIT_AUTHOR,
+    creditSource:
+      env.GUNNER_PLACEHOLDER_COVER_CREDIT_SOURCE?.trim() ||
+      DEFAULT_PLACEHOLDER_COVER_CREDIT_SOURCE,
+    licenseOrRights:
+      env.GUNNER_PLACEHOLDER_COVER_LICENSE_OR_RIGHTS?.trim() ||
+      DEFAULT_PLACEHOLDER_COVER_LICENSE_OR_RIGHTS,
   };
 }
 

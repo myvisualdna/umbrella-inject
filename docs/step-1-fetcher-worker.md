@@ -72,19 +72,9 @@ npm run fetcher:run:dry-run -- --run=run1
 npm run fetcher:verify
 ```
 
-## Legacy pipeline status
+## Legacy pipeline status (removed)
 
-Legacy direct-to-Sanity path is preserved but guarded.
+The legacy direct-to-Sanity path was removed. There is no `ALLOW_LEGACY_DIRECT_SANITY`
+escape hatch. Use the staged pipeline only (`run:run*`, `ai:*`, `gunner:*`).
 
-- Legacy entrypoint: `src/core/runOnce.ts`
-- Guard env: `ALLOW_LEGACY_DIRECT_SANITY=true`
-- Without that env, legacy runs fail fast with a safety message.
-
-Legacy scripts are intentionally namespaced:
-
-```bash
-npm run legacy:run:run1
-npm run legacy:run:run2
-npm run legacy:run:run3
-npm run legacy:run:run4
-```
+See [`docs/legacy-cleanup.md`](legacy-cleanup.md).

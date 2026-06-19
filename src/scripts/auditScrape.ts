@@ -5,7 +5,7 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import { runSourceScraper, readScrapedArticles } from "../core/scrapingRunner";
+import { runSourceScraper, readScrapedArticles } from "../core/scraperDispatch";
 import { logger } from "../config/logger";
 import { parseSourceKeysEnv } from "../config/sourceKeyFilters";
 import { getLatestResultFilePath } from "../utils/scraperUtils";
@@ -21,11 +21,7 @@ import {
   type SourceAuditResult,
 } from "./auditScrapeValidate";
 
-process.env.CHATGPT_MIDDLEWARE_ENABLED = "false";
-process.env.SANITY_GUNNER_ENABLED = "false";
-
-const AUDIT_COMMAND =
-  "CHATGPT_MIDDLEWARE_ENABLED=false SANITY_GUNNER_ENABLED=false npm run audit:scrape";
+const AUDIT_COMMAND = "npm run audit:scrape";
 
 /** Baseline from audit before Step 1 scraper fixes (2026-06-13). */
 const AUDIT_BASELINE = {
@@ -60,7 +56,7 @@ const AUDIT_BASELINE = {
     "src/sources/apNewsScraper.ts",
     "src/sources/cbs*Scraper.ts (×3)",
     "src/sources/techCrunchScraper.ts",
-    "src/middleware/cleaningPatterns.ts",
+    "src/scraping/cleaningPatterns.ts",
     "src/scrapers/**/*.ts (×23)",
     "src/scripts/auditScrapeManifest.ts",
     "src/scripts/auditScrape.ts",
@@ -268,8 +264,6 @@ async function main(): Promise<void> {
   logger.info("Starting scraping-only audit");
   logger.info(`Article limit: ${articleLimit}, source delay: ${sourceDelayMs}ms`);
   logger.info(`Sources selected: ${sourcesToAudit.length}`);
-  logger.info(`CHATGPT_MIDDLEWARE_ENABLED=${process.env.CHATGPT_MIDDLEWARE_ENABLED}`);
-  logger.info(`SANITY_GUNNER_ENABLED=${process.env.SANITY_GUNNER_ENABLED}`);
 
   const sourceResults: Array<
     SourceAuditResult & {

@@ -10,7 +10,12 @@ import {
   buildDraftId,
   mapProcessedPayloadToSanityDraft,
 } from "../gunnerWorker/mapProcessedPayloadToSanityDraft";
-import { parsePlaceholderCoverConfig } from "../gunnerWorker/cover";
+import {
+  buildPlaceholderCover,
+  DEFAULT_PLACEHOLDER_COVER_ALT,
+  DEFAULT_PLACEHOLDER_COVER_URL,
+  parsePlaceholderCoverConfig,
+} from "../gunnerWorker/cover";
 import { paragraphsToPortableText } from "../gunnerWorker/portableText";
 import { validateSanityDraftPayload } from "../gunnerWorker/validateSanityDraftPayload";
 
@@ -204,8 +209,51 @@ function testValidatorRejectsUnsafeDocs(): void {
   );
 }
 
+function testPlaceholderCoverDefaults(): void {
+  const fromEmptyEnv = parsePlaceholderCoverConfig({
+    GUNNER_PLACEHOLDER_COVER_URL: "",
+    GUNNER_PLACEHOLDER_COVER_ALT: "   ",
+    GUNNER_PLACEHOLDER_COVER_CAPTION: "",
+    GUNNER_PLACEHOLDER_COVER_CREDIT_AUTHOR: "",
+    GUNNER_PLACEHOLDER_COVER_CREDIT_SOURCE: "",
+    GUNNER_PLACEHOLDER_COVER_LICENSE_OR_RIGHTS: "",
+  });
+
+  assert(
+    fromEmptyEnv.externalUrl === DEFAULT_PLACEHOLDER_COVER_URL,
+    "Expected empty URL env to fall back to default placeholder URL"
+  );
+  assert(
+    fromEmptyEnv.alt === DEFAULT_PLACEHOLDER_COVER_ALT,
+    "Expected empty alt env to fall back to default alt"
+  );
+
+  const { cover, warnings } = buildPlaceholderCover(fromEmptyEnv);
+  assert(cover._type === "coverMedia", "Expected coverMedia type");
+  assert(cover.source === "external", "Expected external source");
+  assert(Boolean(cover.externalUrl), "Expected externalUrl on placeholder cover");
+  assert(warnings.length > 0, "Expected placeholder warnings");
+
+  const { draft } = mapProcessedPayloadToSanityDraft(
+    CANDIDATE_ID,
+    buildPayload(),
+    {},
+    { placeholderCover: fromEmptyEnv }
+  );
+  assert(
+    draft.cover?.externalUrl === DEFAULT_PLACEHOLDER_COVER_URL,
+    "Expected mapped draft to use default placeholder URL"
+  );
+  const validation = validateSanityDraftPayload(draft);
+  assert(
+    validation.valid,
+    `Expected draft with default placeholder cover to validate: ${validation.issues.join("; ")}`
+  );
+}
+
 function main(): void {
   testPortableText();
+  testPlaceholderCoverDefaults();
   testMapperSafety();
   testCategoryResolution();
   testTickerTitleMaxRejected();

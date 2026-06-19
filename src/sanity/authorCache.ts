@@ -7,9 +7,6 @@ import * as path from "path";
 import { logger } from "../config/logger";
 import { SanityCategoryReference } from "./types";
 
-/**
- * Structure of the authors cache file
- */
 interface AuthorCacheFile {
   lastUpdated: string;
   authors: Array<{
@@ -20,20 +17,10 @@ interface AuthorCacheFile {
   }>;
 }
 
-/**
- * In-memory cache loaded from file
- */
 let authorCache: Map<string, string> | null = null;
 
-/**
- * Path to the authors cache file
- */
 const CACHE_FILE_PATH = path.join(process.cwd(), "src", "utils", "data", "sanity-authors.json");
 
-/**
- * Loads authors from the JSON cache file
- * @returns Map of author identifier (slug, name, or email) to document ID
- */
 function loadAuthorCache(): Map<string, string> {
   if (authorCache) {
     return authorCache;
@@ -56,7 +43,6 @@ function loadAuthorCache(): Map<string, string> {
       return authorCache;
     }
 
-    // Populate cache with slug, name, and email mappings
     for (const author of data.authors) {
       if (author._id) {
         if (author.slug) {
@@ -83,13 +69,6 @@ function loadAuthorCache(): Map<string, string> {
   }
 }
 
-/**
- * Resolves an author string to a Sanity author reference using the cache
- * Can match by slug, name, or email
- * 
- * @param author - Author identifier (slug, name, or email)
- * @returns Author reference or undefined if not found
- */
 export function resolveAuthorReference(
   author: string | null | undefined
 ): SanityCategoryReference | undefined {
@@ -99,11 +78,9 @@ export function resolveAuthorReference(
 
   const cache = loadAuthorCache();
 
-  // Try exact match first
   const authorLower = author.toLowerCase().trim();
   let authorId = cache.get(authorLower);
 
-  // If not found, try slug format (replace spaces/special chars with hyphens)
   if (!authorId) {
     const authorSlug = authorLower.replace(/[^\w-]/g, "-");
     authorId = cache.get(authorSlug);
@@ -121,11 +98,6 @@ export function resolveAuthorReference(
   };
 }
 
-/**
- * Gets a random author reference from the cache (excluding specified slug)
- * @param excludeSlug - Slug to exclude from selection (e.g., "andres-n")
- * @returns Random author reference or undefined if no authors available
- */
 export function getRandomAuthorReference(
   excludeSlug?: string
 ): SanityCategoryReference | undefined {
@@ -143,7 +115,6 @@ export function getRandomAuthorReference(
       return undefined;
     }
 
-    // Filter out excluded author
     const excludeSlugLower = excludeSlug?.toLowerCase().trim();
     const availableAuthors = data.authors.filter((author) => {
       if (!author._id) return false;
@@ -158,7 +129,6 @@ export function getRandomAuthorReference(
       return undefined;
     }
 
-    // Pick a random author
     const randomIndex = Math.floor(Math.random() * availableAuthors.length);
     const selectedAuthor = availableAuthors[randomIndex];
 
@@ -175,19 +145,10 @@ export function getRandomAuthorReference(
   }
 }
 
-/**
- * Gets the path to the author cache file
- */
 export function getAuthorCachePath(): string {
   return CACHE_FILE_PATH;
 }
 
-/**
- * Clears the in-memory author cache so the next read reloads from disk.
- * Useful after a cache refresh updates the JSON file.
- */
 export function clearAuthorCache(): void {
   authorCache = null;
 }
-
-

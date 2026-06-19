@@ -1,4 +1,4 @@
-import { cleanArticleBody } from "../middleware/cleanArticleBody";
+import { cleanArticleBody } from "../scraping/cleanArticleBody";
 
 export interface ArticleDetailsBase {
   url: string;

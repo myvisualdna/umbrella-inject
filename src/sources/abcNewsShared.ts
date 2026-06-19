@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio";
 import { logger } from "../config/logger";
-import { cleanArticleBody } from "../middleware/cleanArticleBody";
+import { cleanArticleBody } from "../scraping/cleanArticleBody";
 import { extractPublishedAt } from "../utils/extractPublishedAt";
 
 type CheerioRoot = ReturnType<typeof cheerio.load>;

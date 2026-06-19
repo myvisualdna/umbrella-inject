@@ -4,7 +4,7 @@ import { logger } from "../config/logger";
 import { clearAuthorCache, getAuthorCachePath } from "./authorCache";
 import { clearCategoryCache, getCategoryCachePath } from "./categoryCache";
 import { getSanityClient } from "./client";
-import { SANITY_DATASET, SANITY_PROJECT_ID } from "./config";
+import { SANITY_DATASET, SANITY_PROJECT_ID } from "./sanityConfig";
 import { clearTagCache, getTagCachePath } from "./tagCache";
 
 interface CategoryRow {
@@ -101,7 +101,6 @@ export async function refreshSanityCaches(): Promise<RefreshSanityCachesResult> 
     })),
   });
 
-  // Force resolvers to reload from the refreshed cache files on next use.
   clearCategoryCache();
   clearTagCache();
   clearAuthorCache();
@@ -117,4 +116,3 @@ export async function refreshSanityCaches(): Promise<RefreshSanityCachesResult> 
   logger.info("Sanity caches refreshed for Gunner Worker", result);
   return result;
 }
-

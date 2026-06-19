@@ -1,4 +1,4 @@
-import { getSanityClient } from "../gunner/client";
+import { getSanityClient } from "../sanity/client";
 import type { SanityDraftPost } from "./types";
 
 export interface CreateDraftOptions {
