@@ -40,10 +40,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: package-lock.json
       - run: npm ci
+        env:
+          NODE_ENV: development
+      - run: test -x node_modules/.bin/ts-node
       - run: FETCHER_WRITE_ENABLED=true npm run run:${{ inputs.run_id }}
       - name: Emit fetcher batch outputs
         id: fetcher_outputs
@@ -71,10 +74,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: package-lock.json
       - run: npm ci
+        env:
+          NODE_ENV: development
+      - run: test -x node_modules/.bin/ts-node
       - run: npm run ai:process-pending
       - name: Emit AI batch outputs
         id: ai_outputs
@@ -103,10 +109,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: package-lock.json
       - run: npm ci
+        env:
+          NODE_ENV: development
+      - run: test -x node_modules/.bin/ts-node
       - run: npm run gunner:create-drafts
       - name: Emit Gunner batch outputs
         id: gunner_outputs
