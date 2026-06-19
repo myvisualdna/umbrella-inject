@@ -29,7 +29,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      NODE_ENV: production
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     outputs:
@@ -43,9 +42,7 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: package-lock.json
-      - run: npm ci
-        env:
-          NODE_ENV: development
+      - run: npm ci --include=dev
       - run: test -x node_modules/.bin/ts-node
       - run: FETCHER_WRITE_ENABLED=true npm run run:${{ inputs.run_id }}
       - name: Emit fetcher batch outputs
@@ -60,7 +57,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      NODE_ENV: production
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -77,9 +73,7 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: package-lock.json
-      - run: npm ci
-        env:
-          NODE_ENV: development
+      - run: npm ci --include=dev
       - run: test -x node_modules/.bin/ts-node
       - run: npm run ai:process-pending
       - name: Emit AI batch outputs
@@ -94,7 +88,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      NODE_ENV: production
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       NEXT_PUBLIC_SANITY_PROJECT_ID: ${{ vars.SANITY_PROJECT_ID }}
@@ -112,9 +105,7 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: package-lock.json
-      - run: npm ci
-        env:
-          NODE_ENV: development
+      - run: npm ci --include=dev
       - run: test -x node_modules/.bin/ts-node
       - run: npm run gunner:create-drafts
       - name: Emit Gunner batch outputs
