@@ -10,7 +10,7 @@ import {
   markStoryCandidateBatchFetched,
 } from "../db/storyCandidateBatches";
 import { hasSupabaseEnv } from "../db/supabaseClient";
-import { runSourceScraper } from "../core/scrapingRunner";
+import { runSourceScraper } from "../core/scraperDispatch";
 import { canonicalizeUrl, normalizeStoryCandidate } from "../normalization/normalizeStoryCandidate";
 import type { NormalizedStoryCandidate, RawScrapedArticle } from "../normalization/types";
 import { getLatestArticlesFromSource } from "../utils/scraperUtils";
@@ -98,8 +98,6 @@ function writeAuditReport(result: FetcherRunResult): void {
   lines.push(`- Supabase updated: ${result.supabaseUpdated}`);
   lines.push(`- openAiCalled: ${result.openAiCalled}`);
   lines.push(`- sanityCalled: ${result.sanityCalled}`);
-  lines.push(`- legacyMiddlewareCalled: ${result.legacyMiddlewareCalled}`);
-  lines.push(`- legacyGunnerCalled: ${result.legacyGunnerCalled}`);
   lines.push("");
   lines.push("## Selected Sources");
   for (const source of result.sourcesSelected) {
@@ -258,8 +256,6 @@ export async function runFetcherBatch(
     supabaseUpdated,
     openAiCalled: false,
     sanityCalled: false,
-    legacyMiddlewareCalled: false,
-    legacyGunnerCalled: false,
     reportPaths: {
       summaryJson: FETCHER_SUMMARY_PATH,
       markdownAudit: FETCHER_REPORT_PATH,

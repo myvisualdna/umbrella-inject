@@ -178,13 +178,8 @@ NEWS_AI_WORKER_ENABLED=false
 NEWS_GUNNER_WORKER_ENABLED=false
 ```
 
-Legacy direct pipeline remains blocked unless explicitly enabled:
-
-```bash
-ALLOW_LEGACY_DIRECT_SANITY=true npm run legacy:run:run1
-```
-
-Do not use legacy path for default production scheduling.
+Legacy direct pipeline was removed. Pause via repository variables above or
+workflow dry-run defaults. See [`docs/legacy-cleanup.md`](legacy-cleanup.md).
 
 ## Resume safely
 

@@ -60,12 +60,13 @@ For each selected candidate (`status = 'processed'`, oldest first):
    **Write mode:** `createIfNotExists(drafts.ingest-{id})` then
    `markCandidateDraftCreated`.
 
-## How it differs from the legacy `src/gunner/*` pipeline
+## Historical note: removed legacy Gunner
 
-The legacy gunner (still wired into `scrapingRunner.ts`, untouched here) was
-unsafe for this workflow. The new worker lives in `src/gunnerWorker/` and:
+The old direct-to-Sanity Gunner (published posts, scraped JSON, Wikimedia/Pexels
+images, editorial flags) was removed. The Gunner Worker lives in `src/gunnerWorker/`
+and uses shared Sanity utilities in `src/sanity/`:
 
-| Concern            | Legacy gunner                              | Gunner Worker (Step 4)                     |
+| Concern            | Removed legacy Gunner                      | Gunner Worker (Step 4)                     |
 | ------------------ | ------------------------------------------ | ------------------------------------------ |
 | Document status    | `status: "published"`                      | `status: "draft"` only                     |
 | `publishedAt`      | set                                        | never set                                  |
@@ -75,9 +76,10 @@ unsafe for this workflow. The new worker lives in `src/gunnerWorker/` and:
 | Homepage/editorial | rails + flags toggled                      | all flags forced `false`                   |
 | Author / readTime  | random                                     | none (unless `GUNNER_DEFAULT_AUTHOR_ID`)   |
 | Source of data     | reads scraped JSON from disk               | reads `processed_payload` from Supabase    |
+| Cover image        | Wikimedia/Pexels/Pixabay cascade           | branded placeholder; editor replaces     |
 
-The new worker **reuses** only the safe, read-only legacy pieces:
-`getSanityClient()`, Sanity env/config, and the category/tag cache resolvers.
+The Gunner Worker reuses: `getSanityClient()`, `src/sanity/sanityConfig.ts`, and
+category/tag cache resolvers from `src/sanity/`.
 
 ## Commands
 
@@ -106,18 +108,27 @@ GUNNER_WRITE_ENABLED=true GUNNER_LIMIT=1 npm run gunner:create-drafts
 | `GUNNER_OVERWRITE_DRAFT`   | `false` | Use `createOrReplace` instead of `createIfNotExists`.           |
 | `GUNNER_REFRESH_SANITY_CACHE` | write=true / dry-run=false | Refresh category/tag/author caches at startup. Explicit env overrides default. |
 | `GUNNER_DEFAULT_AUTHOR_ID` | (none)  | If set, attach this author reference to the draft.              |
-| `GUNNER_PLACEHOLDER_COVER_SOURCE` | `external` | Placeholder cover source.                         |
-| `GUNNER_PLACEHOLDER_COVER_URL` | built-in placeholder URL | Placeholder cover URL.                    |
-| `GUNNER_PLACEHOLDER_COVER_ALT` | default text | Alt text marking placeholder for replacement.       |
-| `GUNNER_PLACEHOLDER_COVER_CAPTION` | default text | Caption reminding editor to replace.        |
-| `GUNNER_PLACEHOLDER_COVER_CREDIT_AUTHOR` | `Angle` | Placeholder credit author.                  |
-| `GUNNER_PLACEHOLDER_COVER_CREDIT_SOURCE` | `Angle` | Placeholder credit source.                  |
-| `GUNNER_PLACEHOLDER_COVER_LICENSE_OR_RIGHTS` | default text | Placeholder rights note.       |
 | `GUNNER_ALLOW_LARGE_BATCH` | `false` | Allow `GUNNER_LIMIT > 5`.                                       |
 | `SANITY_API_WRITE_TOKEN`   | —       | Sanity write token (used by `getSanityClient`).                 |
 | `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | — | Supabase access.                            |
 
 `--dry-run` (CLI flag) also forces dry-run regardless of `GUNNER_WRITE_ENABLED`.
+
+### Optional placeholder cover overrides
+
+Defaults live in `src/gunnerWorker/cover.ts` (branded Angle placeholder image and
+metadata). Set these env vars only when you need to override; missing or empty
+values use the built-in defaults — GitHub Actions does not require them.
+
+| Variable | Built-in default | Purpose |
+| -------- | ---------------- | ------- |
+| `GUNNER_PLACEHOLDER_COVER_SOURCE` | `external` | Placeholder cover source. |
+| `GUNNER_PLACEHOLDER_COVER_URL` | Supabase signed URL for `theangle-cover-placeholder.png` | Placeholder cover URL. |
+| `GUNNER_PLACEHOLDER_COVER_ALT` | `The Angle: News, analysis and perspective.` | Alt text. |
+| `GUNNER_PLACEHOLDER_COVER_CAPTION` | same as alt | Caption. |
+| `GUNNER_PLACEHOLDER_COVER_CREDIT_AUTHOR` | `Angle` | Credit author. |
+| `GUNNER_PLACEHOLDER_COVER_CREDIT_SOURCE` | `Angle` | Credit source. |
+| `GUNNER_PLACEHOLDER_COVER_LICENSE_OR_RIGHTS` | `The Angle Media Network.` | Rights note. |
 
 ## Fields the draft sets
 

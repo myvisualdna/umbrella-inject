@@ -25,8 +25,6 @@ async function main(): Promise<void> {
   assert(result.supabaseUpdated === false, "Expected supabaseUpdated=false in dry-run");
   assert(result.openAiCalled === false, "Expected openAiCalled=false");
   assert(result.sanityCalled === false, "Expected sanityCalled=false");
-  assert(result.legacyMiddlewareCalled === false, "Expected legacyMiddlewareCalled=false");
-  assert(result.legacyGunnerCalled === false, "Expected legacyGunnerCalled=false");
   assert(result.batchId.startsWith("dry-run-"), "Expected dry-run batch id");
 
   console.log("verifyFetcherWorker: PASS");
@@ -44,8 +42,6 @@ async function main(): Promise<void> {
         supabaseUpdated: result.supabaseUpdated,
         openAiCalled: result.openAiCalled,
         sanityCalled: result.sanityCalled,
-        legacyMiddlewareCalled: result.legacyMiddlewareCalled,
-        legacyGunnerCalled: result.legacyGunnerCalled,
       },
       null,
       2

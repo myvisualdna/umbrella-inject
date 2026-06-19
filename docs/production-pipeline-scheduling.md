@@ -65,13 +65,23 @@ Safe defaults:
 - `FETCHER_MAX_TOTAL_ARTICLES`
 - `AI_PROCESS_LIMIT`
 - `GUNNER_LIMIT`
+- `GUNNER_DEFAULT_AUTHOR_ID`
+
+## Optional GitHub repository variables (placeholder cover overrides)
+
+Branded placeholder cover defaults are built into `src/gunnerWorker/cover.ts`.
+GitHub Actions do **not** need these unless you want to override the defaults:
+
 - `GUNNER_PLACEHOLDER_COVER_URL`
 - `GUNNER_PLACEHOLDER_COVER_ALT`
 - `GUNNER_PLACEHOLDER_COVER_CAPTION`
 - `GUNNER_PLACEHOLDER_COVER_CREDIT_AUTHOR`
 - `GUNNER_PLACEHOLDER_COVER_CREDIT_SOURCE`
 - `GUNNER_PLACEHOLDER_COVER_LICENSE_OR_RIGHTS`
-- `GUNNER_DEFAULT_AUTHOR_ID`
+- `GUNNER_PLACEHOLDER_COVER_SOURCE`
+
+Empty or unset values fall back to app defaults (including the Supabase-hosted
+`theangle-cover-placeholder.png` signed URL).
 
 ## Enablement progression
 
@@ -160,15 +170,10 @@ Set corresponding stage variable to `false`:
 - `NEWS_AI_WORKER_ENABLED`
 - `NEWS_GUNNER_WORKER_ENABLED`
 
-### Legacy rollback (explicit, temporary)
+### Rollback / pause
 
-Legacy path remains guarded and must be explicitly enabled:
-
-```bash
-ALLOW_LEGACY_DIRECT_SANITY=true npm run legacy:run:run1
-```
-
-Do not use legacy path for default production scheduling.
+There is no legacy direct-to-Sanity rollback path. To pause ingestion, disable
+stage repository variables (see above) or use workflow dry-run defaults.
 
 ## Resume safely
 
@@ -180,9 +185,10 @@ Do not use legacy path for default production scheduling.
 6. Re-enable Gunner only after separate live draft validation.
 7. Keep strict batch count envs enabled in scheduled workflows.
 
-## Why legacy middleware/gunner remain disabled
+## Why the staged pipeline is required
 
-- Legacy path bypasses the queue model.
-- It mixes scraping with immediate transformation/publish-oriented behavior.
-- New staged workers provide safer isolation, retries, and controlled throughput.
-- Editorial placement is manual in Sanity; ingestion should not auto-apply homepage flags.
+- The removed legacy path bypassed the queue model.
+- It mixed scraping with immediate transformation/publish-oriented behavior.
+- Staged workers provide safer isolation, retries, and controlled throughput.
+- Editorial placement is manual in Sanity; ingestion does not auto-apply homepage flags.
+- Images use Gunner placeholder cover fields; editors replace them in Sanity review.

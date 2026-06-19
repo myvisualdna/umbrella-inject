@@ -1,0 +1,48 @@
+{
+  "testRunAt": "2026-06-15T03:34:59.935Z",
+  "baseline": {
+    "label": "run1 as configured",
+    "plannedCounts": {
+      "apNewsUS": 2,
+      "yahooUSNews": 1,
+      "apNewsWorld": 1,
+      "yahooWorldNews": 1,
+      "apNewsPolitics": 2,
+      "apNewsBusiness": 1
+    },
+    "plannedTotal": 8,
+    "collectedTotal": 8,
+    "collectedByOrigin": {
+      "apNewsUS": 2,
+      "yahooUSNews": 1,
+      "apNewsWorld": 1,
+      "yahooWorldNews": 1,
+      "apNewsPolitics": 2,
+      "apNewsBusiness": 1
+    },
+    "file": "run1-baseline-as-configured.json"
+  },
+  "count5": {
+    "label": "run1 all sources count=5",
+    "plannedCounts": {
+      "apNewsUS": 5,
+      "yahooUSNews": 5,
+      "apNewsWorld": 5,
+      "yahooWorldNews": 5,
+      "apNewsPolitics": 5,
+      "apNewsBusiness": 5
+    },
+    "plannedTotal": 30,
+    "collectedTotal": 30,
+    "collectedByOrigin": {
+      "apNewsUS": 5,
+      "yahooUSNews": 5,
+      "apNewsWorld": 5,
+      "yahooWorldNews": 5,
+      "apNewsPolitics": 5,
+      "apNewsBusiness": 5
+    },
+    "file": "run1-all-sources-count-5.json"
+  },
+  "conclusion": "Increasing count produced more collected articles as expected."
+}

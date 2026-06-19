@@ -28,19 +28,15 @@ run config
    - `.github/workflows/manual-ingestion-pipeline.yml`
 3. Local scheduler default behavior is now fetcher-only:
    - `src/core/scheduler.ts`
-4. Legacy direct execution path was additionally guarded close to danger:
-   - `src/core/scrapingRunner.ts` (`executeRun*` now require `ALLOW_LEGACY_DIRECT_SANITY=true`)
-5. Guarded legacy local scheduler entrypoint added:
-   - `src/core/legacyScheduler.ts`
-   - script: `npm run legacy:scraper`
+4. Scraper dispatch isolated in `src/core/scraperDispatch.ts` (legacy `scrapingRunner.ts` removed)
 
 ## Behavior after Part 2
 
-- Scheduled workflows no longer call legacy scripts.
-- Scheduled workflows no longer depend on legacy middleware/gunner toggles.
+- Scheduled workflows use staged Fetcher → AI → Gunner jobs only.
+- Scheduled workflows do not depend on removed legacy middleware/gunner toggles.
 - Scheduled workflows can be progressively enabled stage-by-stage using repository variables.
 - Manual dispatch supports safe dry-run defaults with explicit opt-in for AI and Gunner stages.
-- Legacy code remains in repository for rollback safety, but disabled by default.
+- Legacy direct-to-Sanity code was removed. See [`docs/legacy-cleanup.md`](legacy-cleanup.md).
 
 ## Stage enablement model
 
@@ -61,16 +57,16 @@ Recommended rollout progression:
 2. Enable AI stage after queue confidence.
 3. Enable Gunner stage after AI quality and throughput checks.
 
-## Legacy status
+## Legacy status (removed)
 
-Legacy direct-to-Sanity path remains preserved but blocked unless explicitly enabled:
+The legacy direct-to-Sanity pipeline (ChatGPT middleware, image service, direct
+Gunner) was removed. The only ingestion path is:
 
-```bash
-ALLOW_LEGACY_DIRECT_SANITY=true npm run legacy:run:run1
-ALLOW_LEGACY_DIRECT_SANITY=true npm run legacy:scraper
+```text
+Fetcher Worker -> Supabase pending -> AI Worker -> Gunner Worker -> Sanity drafts
 ```
 
-Default run paths must remain staged (`run:runX`, scheduled workflows, manual-ingestion workflow).
+Publishing and image selection remain manual in Sanity Studio.
 
 ## Artifacts
 
@@ -83,7 +79,7 @@ Part 2 migration artifacts:
 
 - Controlled production enablement of stage gates
 - Operational monitoring/alerts for queue depth and stage failures
-- Final legacy archive/removal once sustained production stability is confirmed
+- ~~Final legacy archive/removal~~ **Done** — see [`docs/legacy-cleanup.md`](legacy-cleanup.md)
 
 ## Batch-aware orchestration follow-up
 

@@ -4,7 +4,7 @@
 
 import { createClient } from "@sanity/client";
 import { logger } from "../config/logger";
-import { SANITY_PROJECT_ID, SANITY_DATASET, SANITY_API_TOKEN } from "./config";
+import { SANITY_PROJECT_ID, SANITY_DATASET, SANITY_API_TOKEN } from "./sanityConfig";
 
 let sanityClient: ReturnType<typeof createClient> | null = null;
 
@@ -32,8 +32,8 @@ export function getSanityClient() {
       projectId: SANITY_PROJECT_ID,
       dataset: SANITY_DATASET,
       token: SANITY_API_TOKEN,
-      useCdn: false, // Use CDN for reads, but not for writes
-      apiVersion: "2024-01-01", // Use current date for API version
+      useCdn: false,
+      apiVersion: "2024-01-01",
     });
 
     logger.info("✅ Sanity client initialized successfully");

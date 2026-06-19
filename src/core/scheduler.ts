@@ -1,10 +1,8 @@
 /**
  * Fetcher scheduler for local/dev usage.
  *
- * This scheduler runs the Fetcher Worker path only:
+ * It runs the Fetcher Worker path only:
  *   scrape -> normalize -> Supabase pending (or dry-run)
- *
- * It never calls legacy middleware or legacy gunner.
  */
 import cron from "node-cron";
 import { logger } from "../config/logger";

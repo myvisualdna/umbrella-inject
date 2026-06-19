@@ -21,9 +21,9 @@ if (result.error) {
   console.log(`   Found ${Object.keys(result.parsed).length} environment variables\n`);
 }
 
-import { getSanityClient } from "../gunner/client";
+import { getSanityClient } from "../sanity/client";
 import { logger } from "../config/logger";
-import { getAuthorCachePath } from "../gunner/authorCache";
+import { getAuthorCachePath } from "../sanity/authorCache";
 
 /**
  * Fetches all authors from Sanity and saves them to a JSON file

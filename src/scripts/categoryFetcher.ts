@@ -21,9 +21,9 @@ if (result.error) {
   console.log(`   Found ${Object.keys(result.parsed).length} environment variables\n`);
 }
 
-import { getSanityClient } from "../gunner/client";
+import { getSanityClient } from "../sanity/client";
 import { logger } from "../config/logger";
-import { getCategoryCachePath } from "../gunner/categoryCache";
+import { getCategoryCachePath } from "../sanity/categoryCache";
 
 /**
  * Fetches all categories from Sanity and saves them to a JSON file

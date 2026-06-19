@@ -38,8 +38,6 @@ export interface FetcherRunResult {
   supabaseUpdated: boolean;
   openAiCalled: false;
   sanityCalled: false;
-  legacyMiddlewareCalled: false;
-  legacyGunnerCalled: false;
   reportPaths: {
     summaryJson: string;
     markdownAudit: string;

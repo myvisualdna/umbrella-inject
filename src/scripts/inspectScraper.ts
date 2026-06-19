@@ -8,7 +8,7 @@ import * as path from "path";
 import { scraperSwitches } from "../config/scraperSwitches";
 import type { SourceKey } from "../config/scrapingControl";
 import { getSourceScrapeLimit } from "../config/sourceScrapeLimits";
-import { runSourceScraper } from "../core/scrapingRunner";
+import { runSourceScraper } from "../core/scraperDispatch";
 import { lookupStoryCandidatesBySourceUrls } from "../db/storyCandidates";
 import { hasSupabaseEnv } from "../db/supabaseClient";
 import { discoverSourceArticles } from "../inspect/discoveryDispatch";
@@ -18,9 +18,6 @@ import type { NormalizedStoryCandidate, RawScrapedArticle } from "../normalizati
 import { validateNormalizedCandidate } from "../normalization/validateNormalizedCandidate";
 import { getManifestEntry } from "./auditScrapeManifest";
 import { getLatestResultFilePath } from "../utils/scraperUtils";
-
-process.env.CHATGPT_MIDDLEWARE_ENABLED = "false";
-process.env.SANITY_GUNNER_ENABLED = "false";
 
 const VALID_SOURCE_KEYS = Object.keys(scraperSwitches).sort() as SourceKey[];
 const VALID_SOURCE_KEY_SET = new Set<string>(VALID_SOURCE_KEYS);
@@ -120,7 +117,7 @@ function writeJson(filePath: string, data: unknown): void {
 }
 
 function buildCommandLine(sourceKey: SourceKey, limit: number): string {
-  return `CHATGPT_MIDDLEWARE_ENABLED=false SANITY_GUNNER_ENABLED=false npm run scraper:inspect -- --source=${sourceKey} --limit=${limit}`;
+  return `npm run scraper:inspect -- --source=${sourceKey} --limit=${limit}`;
 }
 
 function buildScrapeSummary(articles: ScrapedArticleRow[]): ScrapeSummaryRow[] {

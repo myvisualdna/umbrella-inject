@@ -32,7 +32,7 @@ import { hasSupabaseEnv } from "../db/supabaseClient";
 import {
   refreshSanityCaches,
   type RefreshSanityCachesResult,
-} from "../gunner/refreshSanityCaches";
+} from "../sanity/refreshSanityCaches";
 import {
   parsePlaceholderCoverConfig,
   type PlaceholderCoverConfig,

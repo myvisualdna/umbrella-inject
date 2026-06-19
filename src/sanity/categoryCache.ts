@@ -55,7 +55,6 @@ function loadCategoryCache(): Map<string, string> {
       return categoryCache;
     }
 
-    // Populate cache with both slug and name mappings
     for (const cat of data.categories) {
       if (cat._id) {
         if (cat.slug) {
@@ -80,9 +79,6 @@ function loadCategoryCache(): Map<string, string> {
 
 /**
  * Resolves a category string to a Sanity category reference using the cache
- * 
- * @param category - Category string (e.g., "us", "world", "politics")
- * @returns Category reference or undefined if not found
  */
 export function resolveCategoryReference(
   category: string | null | undefined
@@ -93,11 +89,9 @@ export function resolveCategoryReference(
 
   const cache = loadCategoryCache();
 
-  // Try exact match first
   const categoryLower = category.toLowerCase().trim();
   let categoryId = cache.get(categoryLower);
 
-  // If not found, try slug format (replace spaces/special chars with hyphens)
   if (!categoryId) {
     const categorySlug = categoryLower.replace(/[^\w-]/g, "-");
     categoryId = cache.get(categorySlug);
@@ -115,17 +109,10 @@ export function resolveCategoryReference(
   };
 }
 
-/**
- * Gets the path to the category cache file
- */
 export function getCategoryCachePath(): string {
   return CACHE_FILE_PATH;
 }
 
-/**
- * Clears the in-memory category cache so the next read reloads from disk.
- * Useful after a cache refresh updates the JSON file.
- */
 export function clearCategoryCache(): void {
   categoryCache = null;
 }

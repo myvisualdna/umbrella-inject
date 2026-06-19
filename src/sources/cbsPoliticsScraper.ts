@@ -1,7 +1,7 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { logger } from "../config/logger";
-import { cleanArticleBody } from "../middleware/cleanArticleBody";
+import { cleanArticleBody } from "../scraping/cleanArticleBody";
 import { extractPublishedAt } from "../utils/extractPublishedAt";
 
 export interface CBSPoliticsArticleItem {

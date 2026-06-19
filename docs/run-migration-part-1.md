@@ -25,12 +25,9 @@ run config -> scrape -> normalize -> Supabase pending
    - `fetcher:run`
    - `fetcher:run:dry-run`
    - `fetcher:verify`
-5. Added legacy namespaced scripts:
-   - `legacy:run:run1` .. `legacy:run:run4`
-6. Added hard legacy guard in `src/core/runOnce.ts`:
-   - requires `ALLOW_LEGACY_DIRECT_SANITY=true`
-7. Marked editorial auto-placement config as legacy:
-   - `src/gunner/editorialConfig.ts` now has deprecation guidance
+5. Added legacy namespaced scripts (removed in legacy cleanup — see `docs/legacy-cleanup.md`)
+6. Added hard legacy guard in `src/core/runOnce.ts` (removed)
+7. Marked editorial auto-placement config as legacy (removed with legacy Gunner)
 
 ## Behavior after Part 1
 
@@ -51,18 +48,13 @@ It no longer:
 - publishes
 - applies editorial/homepage flags
 
-## Legacy code policy in Part 1
+## Legacy code policy (completed)
 
-Legacy code is intentionally retained for rollback safety and historical
-reference. It is not removed in this phase.
+The legacy direct-to-Sanity pipeline was **removed** after staged production
+validation. Part 1 rewired public run scripts to Fetcher Worker only; legacy
+rollback scripts and middleware/gunner direct-write code no longer exist.
 
-Protected legacy execution:
-
-```bash
-ALLOW_LEGACY_DIRECT_SANITY=true npm run legacy:run:run1
-```
-
-Without that env, legacy run entrypoint refuses execution.
+See [`docs/legacy-cleanup.md`](legacy-cleanup.md) for the removal audit.
 
 ## Artifacts
 
@@ -71,11 +63,8 @@ Fetcher Worker writes:
 - `audit-output/fetcher-worker/summary.json`
 - `audit-output/fetcher-worker/FETCHER_WORKER_AUDIT.md`
 
-## Part 2 preview
+## Part 2 preview (completed)
 
-Part 2 will cover:
-
-- GitHub Actions scheduling and orchestration updates
-- AI Worker and Gunner Worker cadence strategy
-- operational rollout checks
-- legacy middleware/gunner archival or removal once stable
+Part 2 covered GitHub Actions scheduling, AI/Gunner worker cadence, batch-aware
+orchestration, and operational rollout checks. Legacy direct-to-Sanity code was
+subsequently removed; see [`docs/legacy-cleanup.md`](legacy-cleanup.md).

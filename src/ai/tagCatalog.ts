@@ -1,4 +1,4 @@
-import { getTagCatalog } from "../gunner/tagCache";
+import { getTagCatalog } from "../sanity/tagCache";
 
 export interface AiTagCatalogItem {
   id: string;

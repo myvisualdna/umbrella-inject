@@ -7,9 +7,6 @@ import * as path from "path";
 import { logger } from "../config/logger";
 import { SanityCategoryReference } from "./types";
 
-/**
- * Structure of the tags cache file
- */
 interface TagCacheFile {
   lastUpdated: string;
   tags: Array<{
@@ -25,20 +22,10 @@ export interface SanityTagCatalogItem {
   title: string;
 }
 
-/**
- * In-memory cache loaded from file
- */
 let tagCache: Map<string, string> | null = null;
 
-/**
- * Path to the tags cache file
- */
 const CACHE_FILE_PATH = path.join(process.cwd(), "src", "utils", "data", "sanity-tags.json");
 
-/**
- * Loads tags from the JSON cache file
- * @returns Map of tag identifier (slug or title) to document ID
- */
 function loadTagCache(): Map<string, string> {
   if (tagCache) {
     return tagCache;
@@ -61,7 +48,6 @@ function loadTagCache(): Map<string, string> {
       return tagCache;
     }
 
-    // Populate cache with both slug and title mappings
     for (const tag of data.tags) {
       if (tag._id) {
         if (tag.slug) {
@@ -84,12 +70,6 @@ function loadTagCache(): Map<string, string> {
   }
 }
 
-/**
- * Resolves a tag string to a Sanity tag reference using the cache
- * 
- * @param tag - Tag string (e.g., "breaking", "analysis", "opinion")
- * @returns Tag reference or undefined if not found
- */
 export function resolveTagReference(
   tag: string | null | undefined
 ): SanityCategoryReference | undefined {
@@ -99,11 +79,9 @@ export function resolveTagReference(
 
   const cache = loadTagCache();
 
-  // Try exact match first
   const tagLower = tag.toLowerCase().trim();
   let tagId = cache.get(tagLower);
 
-  // If not found, try slug format (replace spaces/special chars with hyphens)
   if (!tagId) {
     const tagSlug = tagLower.replace(/[^\w-]/g, "-");
     tagId = cache.get(tagSlug);
@@ -121,44 +99,29 @@ export function resolveTagReference(
   };
 }
 
-/**
- * Resolves multiple tag strings to Sanity tag references
- * 
- * @param tags - Array of tag strings
- * @returns Array of tag references with _key properties (only includes found tags)
- */
 export function resolveTagReferences(
   tags: (string | null | undefined)[]
 ): SanityCategoryReference[] {
   const references: SanityCategoryReference[] = [];
-  
+
   for (let i = 0; i < tags.length; i++) {
     const tag = tags[i];
     const ref = resolveTagReference(tag);
     if (ref) {
-      // Add _key property required by Sanity for array items
-      // Use a combination of index and ref ID to ensure uniqueness
       references.push({
         ...ref,
         _key: `tag-${i}-${ref._ref.substring(0, 8)}`,
       });
     }
   }
-  
+
   return references;
 }
 
-/**
- * Gets the path to the tag cache file
- */
 export function getTagCachePath(): string {
   return CACHE_FILE_PATH;
 }
 
-/**
- * Returns the current tag catalog as normalized slug/title/id items.
- * Used by the AI worker to constrain tag selection.
- */
 export function getTagCatalog(): SanityTagCatalogItem[] {
   if (!fs.existsSync(CACHE_FILE_PATH)) {
     logger.warn(`Tag cache file not found: ${CACHE_FILE_PATH}`);
@@ -192,10 +155,6 @@ export function getAllowedTagSlugs(): string[] {
   return getTagCatalog().map((tag) => tag.slug);
 }
 
-/**
- * Clears the in-memory tag cache so the next read reloads from disk.
- * Useful after a cache refresh updates the JSON file.
- */
 export function clearTagCache(): void {
   tagCache = null;
 }
