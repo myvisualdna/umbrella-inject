@@ -55,7 +55,10 @@ jobs:
           npm ls ts-node
           ls -la node_modules/.bin/ts-node
           test -x node_modules/.bin/ts-node
-      - run: FETCHER_WRITE_ENABLED=true npm run run:${{ inputs.run_id }}
+      - run: npm run run:${{ inputs.run_id }}
+        env:
+          FETCHER_WRITE_ENABLED: "true"
+          FETCHER_DRY_RUN: "false"
       - name: Emit fetcher batch outputs
         id: fetcher_outputs
         run: npm run github:outputs:fetcher
