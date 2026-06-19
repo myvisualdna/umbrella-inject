@@ -43,8 +43,19 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: package-lock.json
-      - run: npm ci --include=dev
-      - run: test -x node_modules/.bin/ts-node
+      - name: Install dependencies
+        env:
+          NODE_ENV: development
+          NPM_CONFIG_PRODUCTION: "false"
+          NPM_CONFIG_OMIT: ""
+        run: npm ci --include=dev
+      - name: Verify TypeScript runner
+        run: |
+          echo "NODE_ENV=$NODE_ENV"
+          npm config get omit
+          npm ls ts-node
+          ls -la node_modules/.bin/ts-node
+          test -x node_modules/.bin/ts-node
       - run: FETCHER_WRITE_ENABLED=true npm run run:run2
       - name: Emit fetcher batch outputs
         id: fetcher_outputs
@@ -78,8 +89,19 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: package-lock.json
-      - run: npm ci --include=dev
-      - run: test -x node_modules/.bin/ts-node
+      - name: Install dependencies
+        env:
+          NODE_ENV: development
+          NPM_CONFIG_PRODUCTION: "false"
+          NPM_CONFIG_OMIT: ""
+        run: npm ci --include=dev
+      - name: Verify TypeScript runner
+        run: |
+          echo "NODE_ENV=$NODE_ENV"
+          npm config get omit
+          npm ls ts-node
+          ls -la node_modules/.bin/ts-node
+          test -x node_modules/.bin/ts-node
       - run: npm run ai:process-pending
       - name: Emit AI batch outputs
         id: ai_outputs
@@ -114,8 +136,19 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: package-lock.json
-      - run: npm ci --include=dev
-      - run: test -x node_modules/.bin/ts-node
+      - name: Install dependencies
+        env:
+          NODE_ENV: development
+          NPM_CONFIG_PRODUCTION: "false"
+          NPM_CONFIG_OMIT: ""
+        run: npm ci --include=dev
+      - name: Verify TypeScript runner
+        run: |
+          echo "NODE_ENV=$NODE_ENV"
+          npm config get omit
+          npm ls ts-node
+          ls -la node_modules/.bin/ts-node
+          test -x node_modules/.bin/ts-node
       - run: npm run gunner:create-drafts
       - name: Emit Gunner batch outputs
         id: gunner_outputs
