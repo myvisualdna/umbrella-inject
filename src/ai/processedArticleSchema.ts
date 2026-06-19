@@ -50,7 +50,13 @@ export function buildProcessedArticleSchema(
     ],
     properties: {
       title: { type: "string", minLength: 4 },
-      tickerTitle: { type: "string", minLength: 1, maxLength: 40 },
+      tickerTitle: {
+        type: "string",
+        minLength: 1,
+        maxLength: 40,
+        description:
+          "Max 40 characters; compact, punchy, keyword-rich; lead with the main actor/event.",
+      },
       excerpt: { type: "string", minLength: 1, maxLength: 280 },
       body: {
         type: "array",
