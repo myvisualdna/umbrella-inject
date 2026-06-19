@@ -1,0 +1,113 @@
+name: Manual Ingestion Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Fetcher run recipe to execute"
+        required: true
+        default: "run1"
+        type: choice
+        options: ["run1", "run2", "run3", "run4"]
+      run_ai:
+        description: "Run AI worker stage"
+        required: true
+        default: false
+        type: boolean
+      run_gunner:
+        description: "Run Gunner worker stage"
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: news-ingestion-manual-pipeline
+  cancel-in-progress: false
+
+jobs:
+  fetcher:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_ENV: production
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    outputs:
+      batch_id: ${{ steps.fetcher_outputs.outputs.batch_id }}
+      inserted_count: ${{ steps.fetcher_outputs.outputs.inserted_count }}
+      run_id: ${{ steps.fetcher_outputs.outputs.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: FETCHER_WRITE_ENABLED=true npm run run:${{ inputs.run_id }}
+      - name: Emit fetcher batch outputs
+        id: fetcher_outputs
+        run: npm run github:outputs:fetcher
+
+  ai:
+    needs: fetcher
+    if: >-
+      needs.fetcher.outputs.inserted_count != '0' &&
+      inputs.run_ai == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_ENV: production
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      AI_PROVIDER: openai
+      AI_BATCH_ID: ${{ needs.fetcher.outputs.batch_id }}
+      AI_EXPECTED_COUNT: ${{ needs.fetcher.outputs.inserted_count }}
+      AI_STRICT_BATCH_COUNTS: "true"
+    outputs:
+      processed_count: ${{ steps.ai_outputs.outputs.processed_count }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run ai:process-pending
+      - name: Emit AI batch outputs
+        id: ai_outputs
+        run: npm run github:outputs:ai
+
+  gunner:
+    needs: [fetcher, ai]
+    if: >-
+      needs.ai.outputs.processed_count != '0' &&
+      inputs.run_gunner == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_ENV: production
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      NEXT_PUBLIC_SANITY_PROJECT_ID: ${{ vars.SANITY_PROJECT_ID }}
+      NEXT_PUBLIC_SANITY_DATASET: ${{ vars.SANITY_DATASET }}
+      SANITY_API_WRITE_TOKEN: ${{ secrets.SANITY_API_WRITE_TOKEN }}
+      GUNNER_BATCH_ID: ${{ needs.fetcher.outputs.batch_id }}
+      GUNNER_EXPECTED_COUNT: ${{ needs.ai.outputs.processed_count }}
+      GUNNER_STRICT_BATCH_COUNTS: "true"
+      GUNNER_WRITE_ENABLED: "true"
+      GUNNER_DEFAULT_AUTHOR_ID: ${{ vars.GUNNER_DEFAULT_AUTHOR_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run gunner:create-drafts
+      - name: Emit Gunner batch outputs
+        id: gunner_outputs
+        run: npm run github:outputs:gunner

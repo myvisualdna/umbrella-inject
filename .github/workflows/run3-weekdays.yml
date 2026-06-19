@@ -1,0 +1,122 @@
+name: Run 3 (WEEKDAYS) - 5:07pm EST
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_ai:
+        description: "Run AI worker stage"
+        required: true
+        default: false
+        type: boolean
+      run_gunner:
+        description: "Run Gunner worker stage"
+        required: true
+        default: false
+        type: boolean
+  schedule:
+    # Fixed EST (UTC-5, no DST): 5:07pm EST Mon-Fri -> 22:07 UTC
+    - cron: "7 22 * * 1-5"
+
+concurrency:
+  group: news-ingestion-pipeline-run3
+  cancel-in-progress: false
+
+jobs:
+  fetcher:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (vars.NEWS_PIPELINE_SCHEDULED_ENABLED == 'true' &&
+      vars.NEWS_FETCHER_ENABLED == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_ENV: production
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    outputs:
+      batch_id: ${{ steps.fetcher_outputs.outputs.batch_id }}
+      inserted_count: ${{ steps.fetcher_outputs.outputs.inserted_count }}
+      run_id: ${{ steps.fetcher_outputs.outputs.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: FETCHER_WRITE_ENABLED=true npm run run:run3
+      - name: Emit fetcher batch outputs
+        id: fetcher_outputs
+        run: npm run github:outputs:fetcher
+
+  ai:
+    needs: fetcher
+    if: >-
+      needs.fetcher.outputs.inserted_count != '0' &&
+      (
+        (github.event_name == 'workflow_dispatch' && inputs.run_ai == true) ||
+        (github.event_name != 'workflow_dispatch' &&
+        vars.NEWS_AI_WORKER_ENABLED == 'true')
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_ENV: production
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      AI_PROVIDER: openai
+      AI_BATCH_ID: ${{ needs.fetcher.outputs.batch_id }}
+      AI_EXPECTED_COUNT: ${{ needs.fetcher.outputs.inserted_count }}
+      AI_STRICT_BATCH_COUNTS: "true"
+    outputs:
+      processed_count: ${{ steps.ai_outputs.outputs.processed_count }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run ai:process-pending
+      - name: Emit AI batch outputs
+        id: ai_outputs
+        run: npm run github:outputs:ai
+
+  gunner:
+    needs: [fetcher, ai]
+    if: >-
+      needs.ai.outputs.processed_count != '0' &&
+      (
+        (github.event_name == 'workflow_dispatch' && inputs.run_gunner == true) ||
+        (github.event_name != 'workflow_dispatch' &&
+        vars.NEWS_GUNNER_WORKER_ENABLED == 'true')
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_ENV: production
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      NEXT_PUBLIC_SANITY_PROJECT_ID: ${{ vars.SANITY_PROJECT_ID }}
+      NEXT_PUBLIC_SANITY_DATASET: ${{ vars.SANITY_DATASET }}
+      SANITY_API_WRITE_TOKEN: ${{ secrets.SANITY_API_WRITE_TOKEN }}
+      GUNNER_BATCH_ID: ${{ needs.fetcher.outputs.batch_id }}
+      GUNNER_EXPECTED_COUNT: ${{ needs.ai.outputs.processed_count }}
+      GUNNER_STRICT_BATCH_COUNTS: "true"
+      GUNNER_WRITE_ENABLED: "true"
+      GUNNER_DEFAULT_AUTHOR_ID: ${{ vars.GUNNER_DEFAULT_AUTHOR_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run gunner:create-drafts
+      - name: Emit Gunner batch outputs
+        id: gunner_outputs
+        run: npm run github:outputs:gunner
