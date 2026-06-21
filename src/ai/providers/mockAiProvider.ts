@@ -37,17 +37,13 @@ function buildExcerpt(candidate: WorkerStoryCandidate, paragraphs: string[]): st
  * Returns catalog-only slugs; if no match is possible, returns [].
  */
 function buildTagSlugs(candidate: WorkerStoryCandidate): string[] {
-  const catalog = loadAiTagCatalog();
+  const catalog = loadAiTagCatalog(candidate.category);
   if (catalog.length === 0) {
     return [];
   }
 
   const allowed = new Set(catalog.map((item) => item.slug));
   const selected = new Set<string>();
-
-  if (allowed.has(candidate.category)) {
-    selected.add(candidate.category);
-  }
 
   const sourceWords = `${candidate.source_key} ${candidate.title}`
     .toLowerCase()

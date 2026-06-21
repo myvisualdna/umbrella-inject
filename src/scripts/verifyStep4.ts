@@ -2,7 +2,7 @@
  * Lightweight Step 4 verification (no Supabase, no Sanity, no network).
  * Validates the Gunner Worker pure functions: portable text conversion,
  * mapper safety (draft-only, no publish/homepage), draft validator rejections,
- * and category resolution via the local cache.
+ * and category/tag reference resolution via the local cache.
  */
 
 import type { ProcessedArticlePayload } from "../ai/types";
@@ -17,6 +17,7 @@ import {
   parsePlaceholderCoverConfig,
 } from "../gunnerWorker/cover";
 import { paragraphsToPortableText } from "../gunnerWorker/portableText";
+import { resolveReferences } from "../gunnerWorker/resolveReferences";
 import { validateSanityDraftPayload } from "../gunnerWorker/validateSanityDraftPayload";
 
 function assert(condition: boolean, message: string): void {
@@ -84,7 +85,6 @@ function testPortableText(): void {
     "Expected well-formed span"
   );
 
-  // Deterministic: same input -> same output.
   const again = paragraphsToPortableText(["First.", "   ", "", "Second."], "body");
   assert(
     JSON.stringify(again) === JSON.stringify(blocks),
@@ -94,13 +94,14 @@ function testPortableText(): void {
 
 function testMapperSafety(): void {
   const payload = buildPayload();
-  const { draft } = mapProcessedPayloadToSanityDraft(
+  const { draft, validationIssues } = mapProcessedPayloadToSanityDraft(
     CANDIDATE_ID,
     payload,
     { imageUrl: "not-a-real-cover" },
     { placeholderCover: PLACEHOLDER_COVER }
   );
 
+  assert(validationIssues.length === 0, `Expected no validation issues, got: ${validationIssues.join("; ")}`);
   assert(draft.status === "draft", `Expected status draft, got ${draft.status}`);
   assert(draft._type === "post", `Expected _type post, got ${draft._type}`);
   assert(
@@ -110,6 +111,7 @@ function testMapperSafety(): void {
   assert(Array.isArray(draft.body) && draft.body.length === 2, "Expected body blocks present");
   assert(Boolean(draft.cover), "Expected placeholder cover to be present");
   assert(draft.cover.source === "external", "Expected placeholder cover source external");
+  assert(Array.isArray(draft.tags) && draft.tags.length === 2, "Expected two resolved tag refs");
 
   const record = draft as unknown as Record<string, unknown>;
   assert(record.publishedAt === undefined, "Expected no publishedAt");
@@ -133,14 +135,50 @@ function testMapperSafety(): void {
   );
 }
 
-function testCategoryResolution(): void {
-  const payload = buildPayload({ category: "business" });
-  const { draft } = mapProcessedPayloadToSanityDraft(
+function testCategoryTagResolution(): void {
+  const matching = resolveReferences("business", ["markets", "economy"]);
+  assert(Boolean(matching.categoryRef?._ref), "Expected business category to resolve");
+  assert(matching.tagRefs.length === 2, "Expected two matching tag refs");
+  assert(matching.missingTags.length === 0, "Expected no missing tags");
+  assert(matching.mismatchedTags.length === 0, "Expected no mismatched tags");
+
+  const mismatched = resolveReferences("business", ["white-house"]);
+  assert(mismatched.tagRefs.length === 0, "Expected no refs for cross-category tag");
+  assert(
+    mismatched.mismatchedTags.includes("white-house"),
+    "Expected white-house to be reported as mismatched for business"
+  );
+
+  const politics = resolveReferences("politics", ["white-house", "congress"]);
+  assert(politics.tagRefs.length === 2, "Expected two Politics tag refs");
+  assert(politics.mismatchedTags.length === 0, "Expected no mismatched Politics tags");
+}
+
+function testMapperRejectsMismatchedTags(): void {
+  const payload = buildPayload({ tagSlugs: ["white-house"] });
+  const { validationIssues, draft } = mapProcessedPayloadToSanityDraft(
     CANDIDATE_ID,
     payload,
     {},
     { placeholderCover: PLACEHOLDER_COVER }
   );
+
+  assert(
+    validationIssues.some((issue) => issue.includes("white-house")),
+    `Expected mismatch issue for white-house, got: ${validationIssues.join("; ")}`
+  );
+  assert(!draft.tags || draft.tags.length === 0, "Mismatched tags must not appear on draft");
+}
+
+function testCategoryResolution(): void {
+  const payload = buildPayload({ category: "business" });
+  const { draft, validationIssues } = mapProcessedPayloadToSanityDraft(
+    CANDIDATE_ID,
+    payload,
+    {},
+    { placeholderCover: PLACEHOLDER_COVER }
+  );
+  assert(validationIssues.length === 0, `Expected no validation issues, got: ${validationIssues.join("; ")}`);
   assert(
     Boolean(draft.category && draft.category._ref),
     "Expected business category to resolve to a reference via cache"
@@ -172,36 +210,30 @@ function testValidatorRejectsUnsafeDocs(): void {
     { placeholderCover: PLACEHOLDER_COVER }
   );
 
-  // status published
   const published = { ...draft, status: "published" } as unknown;
   assert(!validateSanityDraftPayload(published).valid, "Expected rejection for status published");
 
-  // publishedAt present
   const withPublishedAt = { ...draft, publishedAt: "2026-06-13T00:00:00.000Z" } as unknown;
   assert(
     !validateSanityDraftPayload(withPublishedAt).valid,
     "Expected rejection when publishedAt present"
   );
 
-  // bodyTextOne present
   const withBodyTextOne = { ...draft, bodyTextOne: "legacy body" } as unknown;
   assert(
     !validateSanityDraftPayload(withBodyTextOne).valid,
     "Expected rejection when bodyTextOne present"
   );
 
-  // homepage flag enabled
   const withFlag = { ...draft, mainHeadline: true } as unknown;
   assert(
     !validateSanityDraftPayload(withFlag).valid,
     "Expected rejection when a homepage flag is enabled"
   );
 
-  // non-draft id
   const badId = { ...draft, _id: "ingest-123" } as unknown;
   assert(!validateSanityDraftPayload(badId).valid, "Expected rejection for non-draft _id");
 
-  // missing category
   const noCategory = { ...draft, category: undefined } as unknown;
   assert(
     !validateSanityDraftPayload(noCategory).valid,
@@ -254,6 +286,8 @@ function testPlaceholderCoverDefaults(): void {
 function main(): void {
   testPortableText();
   testPlaceholderCoverDefaults();
+  testCategoryTagResolution();
+  testMapperRejectsMismatchedTags();
   testMapperSafety();
   testCategoryResolution();
   testTickerTitleMaxRejected();

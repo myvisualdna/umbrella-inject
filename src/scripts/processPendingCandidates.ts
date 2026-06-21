@@ -274,6 +274,7 @@ async function processCandidate(
     const result = await provider.generateArticleDraft(candidate);
     const validation = validateProcessedArticle(result.payload, {
       expectedSourceUrl: candidate.source_url,
+      category: candidate.category,
     });
     outcome.validated = validation.valid;
     outcome.validationIssues = validation.reasons;
@@ -304,6 +305,7 @@ async function processCandidate(
     const result = await provider.generateArticleDraft(claimed);
     const validation = validateProcessedArticle(result.payload, {
       expectedSourceUrl: claimed.source_url,
+      category: claimed.category,
     });
 
     previews.push({

@@ -1,45 +1,45 @@
 {
-  "lastUpdated": "2026-06-15T04:59:01.199Z",
+  "lastUpdated": "2026-06-21T07:02:49.513Z",
   "categories": [
     {
-      "_id": "JVi0Tvmrmg4SpIPaUuykJD",
-      "slug": "business",
-      "name": "Business"
-    },
-    {
-      "_id": "PiQZ1crlvMFHJztcYBSjpf",
-      "slug": "entertainment",
-      "name": "Entertainment"
-    },
-    {
-      "_id": "PiQZ1crlvMFHJztcYBSkKb",
-      "slug": "lifestyle",
-      "name": "Lifestyle"
-    },
-    {
-      "_id": "PiQZ1crlvMFHJztcYBSjKj",
-      "slug": "politics",
-      "name": "Politics"
-    },
-    {
-      "_id": "JVi0Tvmrmg4SpIPaUuykP1",
-      "slug": "science",
-      "name": "Science"
-    },
-    {
-      "_id": "PiQZ1crlvMFHJztcYBSk7L",
-      "slug": "tech",
-      "name": "Tech"
-    },
-    {
-      "_id": "PiQZ1crlvMFHJztcYBSj33",
+      "_id": "category.us",
       "slug": "us",
       "name": "US"
     },
     {
-      "_id": "PiQZ1crlvMFHJztcYBSjBt",
+      "_id": "category.world",
       "slug": "world",
       "name": "World"
+    },
+    {
+      "_id": "category.politics",
+      "slug": "politics",
+      "name": "Politics"
+    },
+    {
+      "_id": "category.business",
+      "slug": "business",
+      "name": "Business"
+    },
+    {
+      "_id": "category.science",
+      "slug": "science",
+      "name": "Science"
+    },
+    {
+      "_id": "category.entertainment",
+      "slug": "entertainment",
+      "name": "Entertainment"
+    },
+    {
+      "_id": "category.tech",
+      "slug": "tech",
+      "name": "Tech"
+    },
+    {
+      "_id": "category.lifestyle",
+      "slug": "lifestyle",
+      "name": "Lifestyle"
     }
   ]
 }

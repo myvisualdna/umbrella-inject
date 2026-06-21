@@ -110,6 +110,8 @@ export interface GunnerMappingResult {
   draft: SanityDraftPost;
   warnings: string[];
   missingTags: string[];
+  mismatchedTags: string[];
+  validationIssues: string[];
   coverIncluded: boolean;
 }
 

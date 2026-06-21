@@ -9,6 +9,7 @@ const validatorCache = new Map<string, ReturnType<typeof ajv.compile>>();
 export interface ValidateProcessedArticleOptions {
   expectedSourceUrl: string;
   allowedTagSlugs?: string[];
+  category?: string;
 }
 
 export interface ProcessedArticleValidationResult {
@@ -26,10 +27,14 @@ export function validateProcessedArticle(
 ): ProcessedArticleValidationResult {
   const reasons: string[] = [];
 
+  const article = payload as ProcessedArticlePayload;
+  const category = options.category ?? article.category;
   const allowedTagSlugs = Array.from(
-    new Set((options.allowedTagSlugs ?? getAllowedTagSlugsForAi()).map((slug) => slug.trim()))
+    new Set(
+      (options.allowedTagSlugs ?? getAllowedTagSlugsForAi(category)).map((slug) => slug.trim())
+    )
   ).filter(Boolean);
-  const cacheKey = allowedTagSlugs.slice().sort().join("|");
+  const cacheKey = `${category}|${allowedTagSlugs.slice().sort().join("|")}`;
   let validateSchema = validatorCache.get(cacheKey);
   if (!validateSchema) {
     validateSchema = ajv.compile(
@@ -47,12 +52,7 @@ export function validateProcessedArticle(
     return { valid: false, reasons };
   }
 
-  const article = payload as ProcessedArticlePayload;
-  const tagSlugs = Array.isArray(article.tagSlugs)
-    ? article.tagSlugs
-    : Array.isArray(article.tags)
-      ? article.tags
-      : [];
+  const tagSlugs = Array.isArray(article.tagSlugs) ? article.tagSlugs : [];
 
   if (article.sourceAttribution.sourceUrl !== options.expectedSourceUrl) {
     reasons.push(
@@ -70,14 +70,15 @@ export function validateProcessedArticle(
     }
   });
 
-  // Canonical validation: provided tagSlugs must come from the allowed catalog.
-  // Legacy fallback (`tags`) is tolerated during transition to avoid breaking
-  // already-processed rows; unknown legacy values are ignored.
   if (Array.isArray(article.tagSlugs)) {
     const allowedSet = new Set(allowedTagSlugs);
     for (const slug of tagSlugs) {
       if (!allowedSet.has(slug)) {
-        reasons.push(`tagSlugs contains unknown slug: ${slug}`);
+        reasons.push(
+          allowedTagSlugs.length === 0
+            ? `tagSlugs contains slug not allowed for category "${category}": ${slug}`
+            : `tagSlugs contains slug not allowed for category "${category}": ${slug}`
+        );
       }
     }
   }

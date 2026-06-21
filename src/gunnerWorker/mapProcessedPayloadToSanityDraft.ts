@@ -37,25 +37,26 @@ export function mapProcessedPayloadToSanityDraft(
   options: MapOptions
 ): GunnerMappingResult {
   const warnings: string[] = [];
-  const selectedTagSlugs = Array.isArray(payload.tagSlugs)
-    ? payload.tagSlugs
-    : Array.isArray(payload.tags)
-      ? payload.tags
-      : [];
-  if (!Array.isArray(payload.tagSlugs) && Array.isArray(payload.tags)) {
-    warnings.push("Using legacy processed_payload.tags fallback; expected canonical tagSlugs");
-  }
+  const validationIssues: string[] = [];
+  const selectedTagSlugs = Array.isArray(payload.tagSlugs) ? payload.tagSlugs : [];
 
-  const { categoryRef, tagRefs, missingTags } = resolveReferences(
+  const { categoryRef, tagRefs, missingTags, mismatchedTags } = resolveReferences(
     payload.category,
     selectedTagSlugs
   );
 
   if (!categoryRef) {
-    warnings.push(`Category "${payload.category}" could not be resolved to a Sanity reference`);
+    validationIssues.push(
+      `Category "${payload.category}" could not be resolved to a Sanity reference`
+    );
   }
   if (missingTags.length > 0) {
-    warnings.push(`Tag slugs not found in cache: ${missingTags.join(", ")}`);
+    validationIssues.push(`Tag slugs not found in cache: ${missingTags.join(", ")}`);
+  }
+  if (mismatchedTags.length > 0) {
+    validationIssues.push(
+      `Tag slugs do not belong to category "${payload.category}": ${mismatchedTags.join(", ")}`
+    );
   }
 
   const body = paragraphsToPortableText(payload.body ?? [], "body");
@@ -113,6 +114,8 @@ export function mapProcessedPayloadToSanityDraft(
     draft,
     warnings,
     missingTags,
+    mismatchedTags,
+    validationIssues,
     coverIncluded: true,
   };
 }

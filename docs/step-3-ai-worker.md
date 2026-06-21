@@ -30,14 +30,21 @@ The worker never calls Sanity, never creates drafts, and never publishes.
 
 ## Tag catalog enforcement (`tagSlugs`)
 
-Step 3 now uses canonical `tagSlugs` instead of free-text tags.
+Step 3 uses canonical `tagSlugs` instead of free-text tags.
+
+Tags are **category-scoped**: every tag belongs to exactly one parent category
+in Sanity (`tag.category -> category`).
 
 - The worker loads the current Sanity tag catalog from local cache.
-- Prompt + JSON schema constrain the model to choose only allowed slugs.
-- Unknown slugs are rejected by validation.
-- If none are relevant, `tagSlugs` should be `[]`.
-- Transitional compatibility: legacy rows with `tags` are still tolerated for
-  downstream migration safety.
+- For each candidate, only tags belonging to the candidate's category are
+  passed to the prompt and JSON schema.
+- Unknown slugs or slugs from another category are rejected by validation.
+- If the category has no valid tags yet, the model receives an empty allowed
+  list and should return `tagSlugs: []`.
+
+Milestone 2 reseeds categories and tags via `npm run taxonomy:reseed` (see
+[`docs/taxonomy.md`](taxonomy.md)). Milestone 3 reseeds articles against this
+taxonomy via `npm run milestone3:reseed` (see [`docs/articles-seed.md`](articles-seed.md)).
 
 ## Providers
 
@@ -52,8 +59,8 @@ The provider is selected by `AI_PROVIDER` and abstracted behind
   with `mock-output`.
 - `openai_response` is populated with mock provider metadata
   (`provider: "mock"`, `model: null`).
-- Mock provider emits only valid catalog `tagSlugs` (or `[]` if no catalog is
-  available).
+- Mock provider emits only valid category-scoped `tagSlugs` (or `[]` if the
+  category has no tags in cache).
 
 ### Dry-run mode
 
@@ -131,7 +138,8 @@ Expected after processing one candidate:
 - `last_error` is null
 - `sanity_document_id` remains null (no Sanity activity)
 - `title`, `body`, `source_url`, and `raw_payload` unchanged
-- `processed_payload.tagSlugs` contains only allowed Sanity tag slugs (or `[]`)
+- `processed_payload.tagSlugs` contains only allowed slugs for the candidate
+  category (or `[]`)
 
 ## Fields the worker updates
 

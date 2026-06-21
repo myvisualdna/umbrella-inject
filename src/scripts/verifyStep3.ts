@@ -9,10 +9,9 @@ import {
   buildSystemPromptForCandidate,
   resolveEditorialTonePreset,
 } from "../ai/prompt";
+import { getAllowedTagSlugsForAi } from "../ai/tagCatalog";
 import { validateProcessedArticle } from "../ai/validateProcessedArticle";
 import type { ProcessedArticlePayload, WorkerStoryCandidate } from "../ai/types";
-
-const TEST_ALLOWED_TAG_SLUGS = ["economy", "markets", "white-house"];
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {
@@ -44,14 +43,58 @@ function buildCandidate(
   };
 }
 
+function testCategoryScopedAllowedTags(): void {
+  const politicsTags = getAllowedTagSlugsForAi("politics");
+  assert(
+    politicsTags.includes("white-house") && politicsTags.includes("congress"),
+    `Expected Politics tags, got: ${politicsTags.join(", ")}`
+  );
+  assert(
+    !politicsTags.includes("markets") && !politicsTags.includes("economy"),
+    "Politics allowed tags must not include Business tags"
+  );
+
+  const businessTags = getAllowedTagSlugsForAi("business");
+  assert(
+    businessTags.includes("markets") && businessTags.includes("economy"),
+    `Expected Business tags, got: ${businessTags.join(", ")}`
+  );
+  assert(
+    !businessTags.includes("white-house"),
+    "Business allowed tags must not include Politics tags"
+  );
+
+  const entertainmentTags = getAllowedTagSlugsForAi("entertainment");
+  assert(entertainmentTags.length === 5, "Entertainment should have 5 scoped tags");
+
+  const unknownTags = getAllowedTagSlugsForAi("unknown");
+  assert(unknownTags.length === 0, "Unknown category should have no scoped tags");
+
+  const politicsPrompt = buildSystemPromptForCandidate(
+    buildCandidate({ category: "politics" }),
+    politicsTags
+  );
+  assert(
+    politicsTags.every((slug) => politicsPrompt.includes(slug)),
+    "Politics prompt should include all Politics tag slugs"
+  );
+  assert(
+    !politicsPrompt.includes("markets") && !politicsPrompt.includes("economy"),
+    "Politics prompt must not include Business tag slugs"
+  );
+
+  const emptyPrompt = buildSystemPrompt([], "angle_default");
+  assert(emptyPrompt.includes("Use tagSlugs: []"), "Empty category tag list should instruct []");
+}
+
 async function testMockProviderValid(): Promise<void> {
-  const candidate = buildCandidate();
+  const candidate = buildCandidate({ category: "business" });
   const provider = new MockAiProvider();
   const result = await provider.generateArticleDraft(candidate);
 
   const validation = validateProcessedArticle(result.payload, {
     expectedSourceUrl: candidate.source_url,
-    allowedTagSlugs: TEST_ALLOWED_TAG_SLUGS,
+    category: candidate.category,
   });
   assert(
     validation.valid,
@@ -71,7 +114,7 @@ async function testMockProviderValid(): Promise<void> {
 
 function testTickerTitleMax(): void {
   const longTitle = "x".repeat(120);
-  const candidate = buildCandidate({ title: longTitle });
+  const candidate = buildCandidate({ category: "business", title: longTitle });
   const payload = buildMockProcessedArticle(candidate);
   assert(
     payload.tickerTitle.length <= 40,
@@ -80,30 +123,29 @@ function testTickerTitleMax(): void {
 
   const validation = validateProcessedArticle(payload, {
     expectedSourceUrl: candidate.source_url,
-    allowedTagSlugs: TEST_ALLOWED_TAG_SLUGS,
+    category: candidate.category,
   });
   assert(validation.valid, `Expected valid payload, got: ${validation.reasons.join(", ")}`);
 }
 
 function testValidatorRejectsInvalid(): void {
-  const candidate = buildCandidate();
+  const candidate = buildCandidate({ category: "business" });
   const base = buildMockProcessedArticle(candidate);
+  const businessAllowed = getAllowedTagSlugsForAi("business");
 
-  // tickerTitle too long
   const longTicker: ProcessedArticlePayload = {
     ...base,
     tickerTitle: "y".repeat(41),
   };
   const longTickerResult = validateProcessedArticle(longTicker, {
     expectedSourceUrl: candidate.source_url,
-    allowedTagSlugs: TEST_ALLOWED_TAG_SLUGS,
+    category: candidate.category,
   });
   assert(!longTickerResult.valid, "Expected rejection for tickerTitle > 40");
 
-  // sourceUrl mismatch
   const mismatchResult = validateProcessedArticle(base, {
     expectedSourceUrl: "https://different.example.com/other",
-    allowedTagSlugs: TEST_ALLOWED_TAG_SLUGS,
+    category: candidate.category,
   });
   assert(!mismatchResult.valid, "Expected rejection for sourceUrl mismatch");
   assert(
@@ -111,33 +153,45 @@ function testValidatorRejectsInvalid(): void {
     "Expected sourceUrl mismatch reason"
   );
 
-  // humanReviewRequired false
   const noReview: ProcessedArticlePayload = {
     ...base,
     editorialNotes: { ...base.editorialNotes, humanReviewRequired: false },
   };
   const noReviewResult = validateProcessedArticle(noReview, {
     expectedSourceUrl: candidate.source_url,
-    allowedTagSlugs: TEST_ALLOWED_TAG_SLUGS,
+    category: candidate.category,
   });
   assert(!noReviewResult.valid, "Expected rejection when humanReviewRequired is false");
 
-  // unknown tag slug
   const unknownTag: ProcessedArticlePayload = { ...base, tagSlugs: ["does-not-exist"] };
   const unknownTagResult = validateProcessedArticle(unknownTag, {
     expectedSourceUrl: candidate.source_url,
-    allowedTagSlugs: TEST_ALLOWED_TAG_SLUGS,
+    category: candidate.category,
   });
   assert(!unknownTagResult.valid, "Expected rejection for unknown tag slug");
 
-  // confidence out of range
+  const crossCategoryTag: ProcessedArticlePayload = {
+    ...base,
+    tagSlugs: ["white-house"],
+  };
+  const crossCategoryResult = validateProcessedArticle(crossCategoryTag, {
+    expectedSourceUrl: candidate.source_url,
+    category: candidate.category,
+    allowedTagSlugs: businessAllowed,
+  });
+  assert(!crossCategoryResult.valid, "Expected rejection for tag from another category");
+  assert(
+    crossCategoryResult.reasons.some((r) => r.includes("tagSlugs")),
+    `Expected tagSlugs validation reason, got: ${crossCategoryResult.reasons.join("; ")}`
+  );
+
   const badConfidence: ProcessedArticlePayload = {
     ...base,
     classification: { ...base.classification, confidence: 5 },
   };
   const badConfidenceResult = validateProcessedArticle(badConfidence, {
     expectedSourceUrl: candidate.source_url,
-    allowedTagSlugs: TEST_ALLOWED_TAG_SLUGS,
+    category: candidate.category,
   });
   assert(!badConfidenceResult.valid, "Expected rejection for confidence > 1");
 }
@@ -185,7 +239,8 @@ function testResolveEditorialTonePreset(): void {
 
 function testOpenAiProviderPathUsesResolvedPresetInSystemPrompt(): void {
   const businessCandidate = buildCandidate({ category: "business" });
-  const businessPrompt = buildSystemPromptForCandidate(businessCandidate, []);
+  const businessAllowed = getAllowedTagSlugsForAi("business");
+  const businessPrompt = buildSystemPromptForCandidate(businessCandidate, businessAllowed);
   assert(
     resolveEditorialTonePreset(businessCandidate) === "business_brief",
     "Expected business category to resolve to business_brief before prompt build"
@@ -198,9 +253,17 @@ function testOpenAiProviderPathUsesResolvedPresetInSystemPrompt(): void {
     businessPrompt.includes("Focus on companies, markets, money, strategy, jobs, and consumer impact."),
     "Expected business_brief preset guidance in system prompt"
   );
+  assert(
+    businessPrompt.includes("Allowed tag slugs:") &&
+      businessAllowed.every((slug) => businessPrompt.includes(slug)),
+    "Expected business prompt to include only Business tag slugs"
+  );
 
   const politicsCandidate = buildCandidate({ category: "politics" });
-  const politicsPrompt = buildSystemPromptForCandidate(politicsCandidate, []);
+  const politicsPrompt = buildSystemPromptForCandidate(
+    politicsCandidate,
+    getAllowedTagSlugsForAi("politics")
+  );
   assert(
     politicsPrompt.includes("Editorial tone: political_insider."),
     "Expected OpenAI provider path to include resolved political_insider preset in system prompt"
@@ -215,7 +278,6 @@ function testOpenAiProviderPathUsesResolvedPresetInSystemPrompt(): void {
 }
 
 function testBuildSystemPromptLowLevelHelper(): void {
-  // Low-level helper tests: direct preset + tag list without candidate resolution.
   const politicalPrompt = buildSystemPrompt(["white-house"], "political_insider");
   assert(
     politicalPrompt.includes("Editorial tone: political_insider."),
@@ -258,6 +320,7 @@ function testBuildSystemPromptLowLevelHelper(): void {
 }
 
 async function main(): Promise<void> {
+  testCategoryScopedAllowedTags();
   testResolveEditorialTonePreset();
   testOpenAiProviderPathUsesResolvedPresetInSystemPrompt();
   testBuildSystemPromptLowLevelHelper();
