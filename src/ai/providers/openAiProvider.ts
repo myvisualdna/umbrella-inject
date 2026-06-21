@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { buildProcessedArticleSchema } from "../processedArticleSchema";
-import { buildSystemPrompt, buildUserPrompt } from "../prompt";
+import { buildSystemPromptForCandidate, buildUserPrompt } from "../prompt";
 import { getAllowedTagSlugsForAi } from "../tagCatalog";
 import type {
   AiArticleProvider,
@@ -42,10 +42,12 @@ export class OpenAiProvider implements AiArticleProvider {
     const allowedTagSlugs = getAllowedTagSlugsForAi();
     const schema = buildProcessedArticleSchema({ allowedTagSlugs });
 
+    const systemPrompt = buildSystemPromptForCandidate(candidate, allowedTagSlugs);
+
     const response = await this.client.chat.completions.create({
       model: this.model,
       messages: [
-        { role: "system", content: buildSystemPrompt(allowedTagSlugs) },
+        { role: "system", content: systemPrompt },
         { role: "user", content: buildUserPrompt(candidate) },
       ],
       response_format: {
