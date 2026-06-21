@@ -17,6 +17,12 @@ interface TagRow {
   _id: string;
   slug?: string;
   title?: string;
+  aliases?: string[];
+  category?: {
+    _id?: string;
+    slug?: string;
+    title?: string;
+  };
 }
 
 interface AuthorRow {
@@ -63,7 +69,13 @@ export async function refreshSanityCaches(): Promise<RefreshSanityCachesResult> 
     `*[_type == "tag"]{
       _id,
       "slug": slug.current,
-      title
+      title,
+      aliases,
+      "category": category->{
+        "_id": _id,
+        "slug": slug.current,
+        "title": name
+      }
     } | order(title asc)`
   );
   const authors = await client.fetch<AuthorRow[]>(
@@ -89,6 +101,14 @@ export async function refreshSanityCaches(): Promise<RefreshSanityCachesResult> 
       _id: tag._id,
       slug: tag.slug || undefined,
       title: tag.title || undefined,
+      aliases: Array.isArray(tag.aliases) ? tag.aliases : undefined,
+      category: tag.category?._id
+        ? {
+            _id: tag.category._id,
+            slug: tag.category.slug || undefined,
+            title: tag.category.title || undefined,
+          }
+        : undefined,
     })),
   });
   writeJson(getAuthorCachePath(), {

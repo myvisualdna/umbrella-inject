@@ -1,50 +1,526 @@
 {
-  "lastUpdated": "2026-06-15T04:59:01.200Z",
+  "lastUpdated": "2026-06-21T07:02:49.514Z",
   "tags": [
     {
-      "_id": "JVi0Tvmrmg4SpIPaUuymm7",
-      "slug": "artificial-intelligence",
-      "title": "Artificial Intelligence"
+      "_id": "tag.us.trump",
+      "slug": "trump",
+      "title": "Trump",
+      "aliases": [
+        "donald trump",
+        "president trump"
+      ],
+      "category": {
+        "_id": "category.us",
+        "slug": "us",
+        "title": "US"
+      }
     },
     {
-      "_id": "JVi0Tvmrmg4SpIPaUuymtr",
+      "_id": "tag.us.iran-war",
+      "slug": "iran-war",
+      "title": "Iran War",
+      "aliases": [
+        "iran conflict",
+        "us iran",
+        "iran"
+      ],
+      "category": {
+        "_id": "category.us",
+        "slug": "us",
+        "title": "US"
+      }
+    },
+    {
+      "_id": "tag.us.crime",
+      "slug": "crime",
+      "title": "Crime",
+      "aliases": [
+        "criminal justice",
+        "public safety"
+      ],
+      "category": {
+        "_id": "category.us",
+        "slug": "us",
+        "title": "US"
+      }
+    },
+    {
+      "_id": "tag.us.abortion",
+      "slug": "abortion",
+      "title": "Abortion",
+      "aliases": [
+        "reproductive rights"
+      ],
+      "category": {
+        "_id": "category.us",
+        "slug": "us",
+        "title": "US"
+      }
+    },
+    {
+      "_id": "tag.us.education",
+      "slug": "education",
+      "title": "Education",
+      "aliases": [
+        "schools",
+        "students"
+      ],
+      "category": {
+        "_id": "category.us",
+        "slug": "us",
+        "title": "US"
+      }
+    },
+    {
+      "_id": "tag.us.weather",
+      "slug": "weather",
+      "title": "Weather",
+      "aliases": [
+        "storms",
+        "forecast",
+        "extreme weather"
+      ],
+      "category": {
+        "_id": "category.us",
+        "slug": "us",
+        "title": "US"
+      }
+    },
+    {
+      "_id": "tag.world.china",
       "slug": "china",
-      "title": "China"
+      "title": "China",
+      "aliases": [
+        "beijing",
+        "chinese government"
+      ],
+      "category": {
+        "_id": "category.world",
+        "slug": "world",
+        "title": "World"
+      }
     },
     {
-      "_id": "JVi0Tvmrmg4SpIPaUuympz",
-      "slug": "climate",
-      "title": "Climate"
+      "_id": "tag.world.europe",
+      "slug": "europe",
+      "title": "Europe",
+      "aliases": [
+        "european union",
+        "eu"
+      ],
+      "category": {
+        "_id": "category.world",
+        "slug": "world",
+        "title": "World"
+      }
     },
     {
-      "_id": "JVi0Tvmrmg4SpIPaUuymiF",
-      "slug": "congress",
-      "title": "Congress"
+      "_id": "tag.world.middle-east",
+      "slug": "middle-east",
+      "title": "Middle East",
+      "aliases": [
+        "mideast",
+        "gulf region"
+      ],
+      "category": {
+        "_id": "category.world",
+        "slug": "world",
+        "title": "World"
+      }
     },
     {
-      "_id": "PiQZ1crlvMFHJztcYBSoDS",
-      "slug": "economy",
-      "title": "Economy"
+      "_id": "tag.world.latin-america",
+      "slug": "latin-america",
+      "title": "Latin America",
+      "aliases": [
+        "latam"
+      ],
+      "category": {
+        "_id": "category.world",
+        "slug": "world",
+        "title": "World"
+      }
     },
     {
-      "_id": "PiQZ1crlvMFHJztcYBSo0C",
-      "slug": "elections",
-      "title": "Elections"
+      "_id": "tag.world.africa",
+      "slug": "africa",
+      "title": "Africa",
+      "aliases": [],
+      "category": {
+        "_id": "category.world",
+        "slug": "world",
+        "title": "World"
+      }
     },
     {
-      "_id": "PiQZ1crlvMFHJztcYBSoMI",
-      "slug": "markets",
-      "title": "Markets"
+      "_id": "tag.politics.immigration",
+      "slug": "immigration",
+      "title": "Immigration",
+      "aliases": [
+        "border",
+        "migrants",
+        "asylum"
+      ],
+      "category": {
+        "_id": "category.politics",
+        "slug": "politics",
+        "title": "Politics"
+      }
     },
     {
-      "_id": "PiQZ1crlvMFHJztcYBSoV8",
-      "slug": "ukraine-russia-war",
-      "title": "Ukraine / Russia War"
-    },
-    {
-      "_id": "JVi0Tvmrmg4SpIPaUuymeN",
+      "_id": "tag.politics.white-house",
       "slug": "white-house",
-      "title": "White House"
+      "title": "White House",
+      "aliases": [
+        "administration",
+        "presidency"
+      ],
+      "category": {
+        "_id": "category.politics",
+        "slug": "politics",
+        "title": "Politics"
+      }
+    },
+    {
+      "_id": "tag.politics.congress",
+      "slug": "congress",
+      "title": "Congress",
+      "aliases": [
+        "house",
+        "senate",
+        "capitol hill"
+      ],
+      "category": {
+        "_id": "category.politics",
+        "slug": "politics",
+        "title": "Politics"
+      }
+    },
+    {
+      "_id": "tag.politics.elections",
+      "slug": "elections",
+      "title": "Elections",
+      "aliases": [
+        "campaigns",
+        "voting",
+        "polls"
+      ],
+      "category": {
+        "_id": "category.politics",
+        "slug": "politics",
+        "title": "Politics"
+      }
+    },
+    {
+      "_id": "tag.politics.supreme-court",
+      "slug": "supreme-court",
+      "title": "Supreme Court",
+      "aliases": [
+        "scotus",
+        "high court"
+      ],
+      "category": {
+        "_id": "category.politics",
+        "slug": "politics",
+        "title": "Politics"
+      }
+    },
+    {
+      "_id": "tag.business.markets",
+      "slug": "markets",
+      "title": "Markets",
+      "aliases": [
+        "stocks",
+        "wall street"
+      ],
+      "category": {
+        "_id": "category.business",
+        "slug": "business",
+        "title": "Business"
+      }
+    },
+    {
+      "_id": "tag.business.economy",
+      "slug": "economy",
+      "title": "Economy",
+      "aliases": [
+        "economic growth",
+        "gdp"
+      ],
+      "category": {
+        "_id": "category.business",
+        "slug": "business",
+        "title": "Business"
+      }
+    },
+    {
+      "_id": "tag.business.finance",
+      "slug": "finance",
+      "title": "Finance",
+      "aliases": [
+        "banking",
+        "financial sector"
+      ],
+      "category": {
+        "_id": "category.business",
+        "slug": "business",
+        "title": "Business"
+      }
+    },
+    {
+      "_id": "tag.business.tariffs",
+      "slug": "tariffs",
+      "title": "Tariffs",
+      "aliases": [
+        "trade duties",
+        "trade policy"
+      ],
+      "category": {
+        "_id": "category.business",
+        "slug": "business",
+        "title": "Business"
+      }
+    },
+    {
+      "_id": "tag.business.inflation",
+      "slug": "inflation",
+      "title": "Inflation",
+      "aliases": [
+        "prices",
+        "cost of living"
+      ],
+      "category": {
+        "_id": "category.business",
+        "slug": "business",
+        "title": "Business"
+      }
+    },
+    {
+      "_id": "tag.business.real-estate",
+      "slug": "real-estate",
+      "title": "Real Estate",
+      "aliases": [
+        "housing",
+        "mortgage rates"
+      ],
+      "category": {
+        "_id": "category.business",
+        "slug": "business",
+        "title": "Business"
+      }
+    },
+    {
+      "_id": "tag.science.space",
+      "slug": "space",
+      "title": "Space",
+      "aliases": [
+        "nasa",
+        "astronomy"
+      ],
+      "category": {
+        "_id": "category.science",
+        "slug": "science",
+        "title": "Science"
+      }
+    },
+    {
+      "_id": "tag.science.life-sciences",
+      "slug": "life-sciences",
+      "title": "Life Sciences",
+      "aliases": [
+        "biology",
+        "genetics",
+        "life"
+      ],
+      "category": {
+        "_id": "category.science",
+        "slug": "science",
+        "title": "Science"
+      }
+    },
+    {
+      "_id": "tag.science.climate",
+      "slug": "climate",
+      "title": "Climate",
+      "aliases": [
+        "climate change",
+        "global warming"
+      ],
+      "category": {
+        "_id": "category.science",
+        "slug": "science",
+        "title": "Science"
+      }
+    },
+    {
+      "_id": "tag.entertainment.movies",
+      "slug": "movies",
+      "title": "Movies",
+      "aliases": [
+        "film",
+        "box office"
+      ],
+      "category": {
+        "_id": "category.entertainment",
+        "slug": "entertainment",
+        "title": "Entertainment"
+      }
+    },
+    {
+      "_id": "tag.entertainment.television",
+      "slug": "television",
+      "title": "Television",
+      "aliases": [
+        "tv",
+        "streaming"
+      ],
+      "category": {
+        "_id": "category.entertainment",
+        "slug": "entertainment",
+        "title": "Entertainment"
+      }
+    },
+    {
+      "_id": "tag.entertainment.fashion",
+      "slug": "fashion",
+      "title": "Fashion",
+      "aliases": [
+        "style"
+      ],
+      "category": {
+        "_id": "category.entertainment",
+        "slug": "entertainment",
+        "title": "Entertainment"
+      }
+    },
+    {
+      "_id": "tag.entertainment.music",
+      "slug": "music",
+      "title": "Music",
+      "aliases": [
+        "albums",
+        "concerts"
+      ],
+      "category": {
+        "_id": "category.entertainment",
+        "slug": "entertainment",
+        "title": "Entertainment"
+      }
+    },
+    {
+      "_id": "tag.entertainment.celebrity",
+      "slug": "celebrity",
+      "title": "Celebrity",
+      "aliases": [
+        "celebrities",
+        "stars"
+      ],
+      "category": {
+        "_id": "category.entertainment",
+        "slug": "entertainment",
+        "title": "Entertainment"
+      }
+    },
+    {
+      "_id": "tag.tech.artificial-intelligence",
+      "slug": "artificial-intelligence",
+      "title": "Artificial Intelligence",
+      "aliases": [
+        "ai",
+        "generative ai",
+        "machine learning"
+      ],
+      "category": {
+        "_id": "category.tech",
+        "slug": "tech",
+        "title": "Tech"
+      }
+    },
+    {
+      "_id": "tag.tech.social-media",
+      "slug": "social-media",
+      "title": "Social Media",
+      "aliases": [
+        "platforms",
+        "facebook",
+        "instagram",
+        "tiktok",
+        "x"
+      ],
+      "category": {
+        "_id": "category.tech",
+        "slug": "tech",
+        "title": "Tech"
+      }
+    },
+    {
+      "_id": "tag.lifestyle.food",
+      "slug": "food",
+      "title": "Food",
+      "aliases": [
+        "restaurants",
+        "cooking"
+      ],
+      "category": {
+        "_id": "category.lifestyle",
+        "slug": "lifestyle",
+        "title": "Lifestyle"
+      }
+    },
+    {
+      "_id": "tag.lifestyle.travel",
+      "slug": "travel",
+      "title": "Travel",
+      "aliases": [
+        "tourism",
+        "destinations"
+      ],
+      "category": {
+        "_id": "category.lifestyle",
+        "slug": "lifestyle",
+        "title": "Lifestyle"
+      }
+    },
+    {
+      "_id": "tag.lifestyle.culture",
+      "slug": "culture",
+      "title": "Culture",
+      "aliases": [
+        "society"
+      ],
+      "category": {
+        "_id": "category.lifestyle",
+        "slug": "lifestyle",
+        "title": "Lifestyle"
+      }
+    },
+    {
+      "_id": "tag.lifestyle.health",
+      "slug": "health",
+      "title": "Health",
+      "aliases": [
+        "wellness",
+        "fitness"
+      ],
+      "category": {
+        "_id": "category.lifestyle",
+        "slug": "lifestyle",
+        "title": "Lifestyle"
+      }
+    },
+    {
+      "_id": "tag.lifestyle.beauty",
+      "slug": "beauty",
+      "title": "Beauty",
+      "aliases": [
+        "skincare",
+        "cosmetics"
+      ],
+      "category": {
+        "_id": "category.lifestyle",
+        "slug": "lifestyle",
+        "title": "Lifestyle"
+      }
     }
   ]
 }

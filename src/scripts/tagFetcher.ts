@@ -71,7 +71,13 @@ async function fetchTags(): Promise<void> {
     const query = `*[_type == "tag"]{
       _id,
       "slug": slug.current,
-      title
+      title,
+      aliases,
+      "category": category->{
+        "_id": _id,
+        "slug": slug.current,
+        "title": name
+      }
     } | order(title asc)`;
     
     console.log("📡 Querying Sanity for tags...\n");
@@ -89,6 +95,14 @@ async function fetchTags(): Promise<void> {
         _id: tag._id,
         slug: tag.slug || undefined,
         title: tag.title || undefined,
+        aliases: Array.isArray(tag.aliases) ? tag.aliases : undefined,
+        category: tag.category?._id
+          ? {
+              _id: tag.category._id,
+              slug: tag.category.slug || undefined,
+              title: tag.category.title || undefined,
+            }
+          : undefined,
       })),
     };
 

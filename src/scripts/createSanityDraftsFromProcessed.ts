@@ -363,6 +363,7 @@ async function processCandidate(
   // Re-validate the stored payload against the AI-worker contract before mapping.
   const inputValidation = validateProcessedArticle(candidate.processed_payload, {
     expectedSourceUrl: candidate.source_url,
+    category: candidate.processed_payload.category,
   });
   if (!inputValidation.valid) {
     outcome.failed = true;
@@ -385,6 +386,16 @@ async function processCandidate(
   );
   outcome.mapped = true;
   outcome.warnings = mapping.warnings;
+
+  if (mapping.validationIssues.length > 0) {
+    outcome.failed = true;
+    outcome.validationIssues = mapping.validationIssues;
+    outcome.error = `Reference validation failed: ${mapping.validationIssues.join("; ")}`;
+    if (!config.dryRun) {
+      await markCandidateGunnerFailed(candidate.id, outcome.error);
+    }
+    return outcome;
+  }
 
   const draftValidation = validateSanityDraftPayload(mapping.draft);
   outcome.validationIssues = draftValidation.issues;

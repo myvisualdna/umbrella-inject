@@ -1,11 +1,12 @@
 import { resolveCategoryReference } from "../sanity/categoryCache";
-import { resolveTagReference } from "../sanity/tagCache";
+import { resolveTagReferencesForCategory } from "../sanity/tagCache";
 import type { SanityReference } from "./types";
 
 export interface ResolvedReferences {
   categoryRef: SanityReference | null;
   tagRefs: SanityReference[];
   missingTags: string[];
+  mismatchedTags: string[];
 }
 
 /**
@@ -13,7 +14,9 @@ export interface ResolvedReferences {
  * references using the local read-only caches (no Sanity writes).
  *
  * - Category is required; returns null categoryRef when it cannot be resolved.
- * - Tags are optional; unresolved tags are reported in `missingTags`.
+ * - Tags must belong to the resolved category.
+ * - Unresolved tags are reported in `missingTags`.
+ * - Tags from another category are reported in `mismatchedTags`.
  */
 export function resolveReferences(
   category: string,
@@ -24,25 +27,15 @@ export function resolveReferences(
     ? { _type: "reference", _ref: legacyCategory._ref }
     : null;
 
-  const tagRefs: SanityReference[] = [];
-  const missingTags: string[] = [];
-  const seenRefs = new Set<string>();
+  const { references, missingTags, mismatchedTags } = resolveTagReferencesForCategory(
+    category,
+    tagSlugs ?? []
+  );
 
-  for (let i = 0; i < (tagSlugs ?? []).length; i++) {
-    const tag = tagSlugs[i];
-    const resolved = resolveTagReference(tag);
-    if (!resolved) {
-      if (tag && tag.trim().length > 0) missingTags.push(tag);
-      continue;
-    }
-    if (seenRefs.has(resolved._ref)) continue;
-    seenRefs.add(resolved._ref);
-    tagRefs.push({
-      _type: "reference",
-      _ref: resolved._ref,
-      _key: `tag-${resolved._ref.substring(0, 8)}`,
-    });
-  }
-
-  return { categoryRef, tagRefs, missingTags };
+  return {
+    categoryRef,
+    tagRefs: references,
+    missingTags,
+    mismatchedTags,
+  };
 }

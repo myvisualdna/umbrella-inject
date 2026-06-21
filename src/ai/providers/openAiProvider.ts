@@ -39,7 +39,7 @@ export class OpenAiProvider implements AiArticleProvider {
     candidate: WorkerStoryCandidate
   ): Promise<AiProviderResult> {
     const startedAt = Date.now();
-    const allowedTagSlugs = getAllowedTagSlugsForAi();
+    const allowedTagSlugs = getAllowedTagSlugsForAi(candidate.category);
     const schema = buildProcessedArticleSchema({ allowedTagSlugs });
 
     const systemPrompt = buildSystemPromptForCandidate(candidate, allowedTagSlugs);

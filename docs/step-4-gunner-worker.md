@@ -52,7 +52,8 @@ For each selected candidate (`status = 'processed'`, oldest first):
    - body as Portable Text under `body`
    - `seo` (`_type: "seo"`)
    - category/tag references resolved from refreshed local caches
-   - tags come from `processed_payload.tagSlugs` (legacy `tags` fallback only for transition)
+   - tags come from `processed_payload.tagSlugs` and must belong to the same
+     category as the payload; mismatches fail before draft creation
    - always includes a branded placeholder `cover` for editorial replacement
 3. Validates the mapped draft (`validateSanityDraftPayload`) — rejects anything
    that looks published or carries legacy/homepage fields.
@@ -130,11 +131,26 @@ values use the built-in defaults — GitHub Actions does not require them.
 | `GUNNER_PLACEHOLDER_COVER_CREDIT_SOURCE` | `Angle` | Credit source. |
 | `GUNNER_PLACEHOLDER_COVER_LICENSE_OR_RIGHTS` | `The Angle Media Network.` | Rights note. |
 
+## Category-scoped tags
+
+Every tag document in Sanity has a required parent category reference
+(`tag.category -> category`). Gunner resolves the payload category first, then
+accepts only tag slugs that belong to that category.
+
+- Matching category/tag references pass and are written to the draft.
+- Tags from another category are rejected with a clear validation error.
+- Uncategorized tags in the local cache are excluded from production paths.
+
+Milestone 2 reseeds categories and tags via `npm run taxonomy:reseed` (see
+[`docs/taxonomy.md`](taxonomy.md)). Milestone 3 reseeds articles against this
+taxonomy via `npm run milestone3:reseed` (see [`docs/articles-seed.md`](articles-seed.md)).
+
 ## Fields the draft sets
 
 - `_id` (`drafts.ingest-{candidateId}`), `_type: "post"`, `status: "draft"`
 - `title`, `tickerTitle` (≤ 40), `excerpt` (≤ 280), `slug`
-- `category` (reference), `tags` (resolved from `tagSlugs`; omitted if none resolve)
+- `category` (reference), `tags` (resolved from category-scoped `tagSlugs`;
+  omitted if none resolve; mismatched tags fail validation)
 - `body` (Portable Text blocks), `seo` (`_type: "seo"`)
 - `readTime` (estimated at ~200 wpm)
 - `cover` placeholder (`_type: "coverMedia"`, `source: "external"`, `externalUrl`,
