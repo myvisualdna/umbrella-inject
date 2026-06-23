@@ -39,6 +39,7 @@
     "github:outputs:gunner": "ts-node src/scripts/emitGunnerGithubOutputs.ts",
     "queue:health": "ts-node src/scripts/queueHealth.ts",
     "pipeline:batch:verify": "ts-node src/scripts/verifyBatchPipelineReadiness.ts",
+    "slack:verify": "ts-node src/scripts/verifySlack.ts",
     "taxonomy:reseed:dry-run": "ts-node src/scripts/reseedTaxonomy.ts --dry-run",
     "taxonomy:reseed": "ts-node src/scripts/reseedTaxonomy.ts --write",
     "taxonomy:reseed:fixtures": "ts-node src/scripts/reseedTaxonomy.ts --write-fixtures",

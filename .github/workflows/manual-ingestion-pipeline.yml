@@ -31,6 +31,12 @@ jobs:
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SLACK_NOTIFICATIONS_ENABLED: ${{ vars.SLACK_NOTIFICATIONS_ENABLED }}
+      SLACK_CHANNEL_NAME: ${{ vars.SLACK_CHANNEL_NAME }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      ANGLE_STUDIO_BASE_URL: ${{ vars.ANGLE_STUDIO_BASE_URL }}
+      ANGLE_SITE_BASE_URL: ${{ vars.ANGLE_SITE_BASE_URL }}
     outputs:
       batch_id: ${{ steps.fetcher_outputs.outputs.batch_id }}
       inserted_count: ${{ steps.fetcher_outputs.outputs.inserted_count }}
@@ -73,6 +79,12 @@ jobs:
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SLACK_NOTIFICATIONS_ENABLED: ${{ vars.SLACK_NOTIFICATIONS_ENABLED }}
+      SLACK_CHANNEL_NAME: ${{ vars.SLACK_CHANNEL_NAME }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      ANGLE_STUDIO_BASE_URL: ${{ vars.ANGLE_STUDIO_BASE_URL }}
+      ANGLE_SITE_BASE_URL: ${{ vars.ANGLE_SITE_BASE_URL }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       AI_PROVIDER: openai
       AI_BATCH_ID: ${{ needs.fetcher.outputs.batch_id }}
@@ -115,6 +127,12 @@ jobs:
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SLACK_NOTIFICATIONS_ENABLED: ${{ vars.SLACK_NOTIFICATIONS_ENABLED }}
+      SLACK_CHANNEL_NAME: ${{ vars.SLACK_CHANNEL_NAME }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      ANGLE_STUDIO_BASE_URL: ${{ vars.ANGLE_STUDIO_BASE_URL }}
+      ANGLE_SITE_BASE_URL: ${{ vars.ANGLE_SITE_BASE_URL }}
       NEXT_PUBLIC_SANITY_PROJECT_ID: ${{ vars.SANITY_PROJECT_ID }}
       NEXT_PUBLIC_SANITY_DATASET: ${{ vars.SANITY_DATASET }}
       SANITY_API_WRITE_TOKEN: ${{ secrets.SANITY_API_WRITE_TOKEN }}

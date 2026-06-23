@@ -30,6 +30,7 @@ import {
   markStoryCandidateBatchFailed,
 } from "../db/storyCandidateBatches";
 import { hasSupabaseEnv } from "../db/supabaseClient";
+import { notifyAiRunComplete, notifyStageFailure, resolveRunIdForSlack } from "../slack/pipelineNotify";
 
 const DEFAULT_LIMIT = 1;
 const LARGE_BATCH_THRESHOLD = 5;
@@ -449,6 +450,7 @@ async function main(): Promise<void> {
   };
 
   writeOutputs(summary, previews);
+  await notifyAiRunComplete(summary);
 
   console.log("");
   console.log(`Candidates selected:  ${summary.candidatesSelected}`);
@@ -465,6 +467,16 @@ async function main(): Promise<void> {
   if (config.batchId && config.expectedCount !== null && summary.batchCountsReconciled === false) {
     const msg = `AI batch ${config.batchId} expected ${config.expectedCount}, got reconcile total ${summary.reconcileTotal}`;
     console.error(msg);
+    await notifyStageFailure({
+      stage: "ai",
+      runId: resolveRunIdForSlack(),
+      batchId: config.batchId,
+      message: msg,
+      details: [
+        `expectedCount=${config.expectedCount}`,
+        `reconcileTotal=${summary.reconcileTotal ?? "n/a"}`,
+      ],
+    });
     if (!config.dryRun) {
       await markStoryCandidateBatchFailed(config.batchId, msg);
     }
@@ -478,13 +490,17 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error) => {
+main().catch(async (error) => {
   const batchId = process.env.AI_BATCH_ID?.trim();
+  const message = error instanceof Error ? error.message : String(error);
+  await notifyStageFailure({
+    stage: "ai",
+    runId: resolveRunIdForSlack(),
+    batchId: batchId ?? null,
+    message,
+  });
   if (batchId && !parseBoolFlag(process.env.AI_DRY_RUN)) {
-    void markStoryCandidateBatchFailed(
-      batchId,
-      error instanceof Error ? error.message : String(error)
-    );
+    void markStoryCandidateBatchFailed(batchId, message);
   }
   console.error("AI worker failed:", error);
   process.exit(1);
