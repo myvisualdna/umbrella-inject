@@ -1,5 +1,13 @@
 export type SlackPipelineStage = "fetcher" | "ai" | "gunner" | "pipeline";
 
+export type SlackFetcherInsertedArticle = {
+  title: string;
+  sourceKey?: string;
+  sourceName?: string;
+  sourceUrl?: string;
+  category?: string;
+};
+
 export type SlackFetcherSummary = {
   runId: string;
   batchId: string | null;
@@ -8,6 +16,8 @@ export type SlackFetcherSummary = {
   failedCount?: number;
   sourceCount?: number;
   dryRun: boolean;
+  insertedArticles?: SlackFetcherInsertedArticle[];
+  sourceBreakdown?: string;
 };
 
 export type SlackAiSummary = {

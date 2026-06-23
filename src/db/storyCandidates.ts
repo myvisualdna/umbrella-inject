@@ -50,6 +50,7 @@ export interface InsertStoryCandidatesResult {
   duplicateCount: number;
   failedCount: number;
   failed: InsertFailure[];
+  insertedCandidates: NormalizedStoryCandidate[];
 }
 
 export interface InsertStoryCandidatesOptions {
@@ -220,6 +221,7 @@ export async function insertStoryCandidates(
       duplicateCount: 0,
       failedCount: 0,
       failed: [],
+      insertedCandidates: [],
     };
   }
 
@@ -242,19 +244,23 @@ export async function insertStoryCandidates(
         sourceUrl: c.sourceUrl,
         reason: error.message,
       })),
+      insertedCandidates: [],
     };
   }
 
   const existingAfter = await getExistingSourceUrls(sourceUrls);
   let insertedCount = 0;
   let duplicateCount = 0;
+  const insertedCandidates: NormalizedStoryCandidate[] = [];
 
-  for (const url of sourceUrls) {
+  for (let index = 0; index < sourceUrls.length; index += 1) {
+    const url = sourceUrls[index];
     const existed = existingBefore.has(url);
     const existsNow = existingAfter.has(url);
 
     if (!existed && existsNow) {
       insertedCount += 1;
+      insertedCandidates.push(candidates[index]);
     } else {
       duplicateCount += 1;
     }
@@ -265,6 +271,7 @@ export async function insertStoryCandidates(
     duplicateCount,
     failedCount: 0,
     failed: [],
+    insertedCandidates,
   };
 }
 

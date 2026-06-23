@@ -8,7 +8,10 @@ import {
   buildFailureMessage,
   buildFetcherSummaryMessage,
   buildGunnerSummaryMessage,
+  buildInsertedArticlesSection,
   buildSanityStudioUrl,
+  escapeSlackMrkdwn,
+  formatFetcherArticleLine,
 } from "../slack/messages";
 import { postSlackMessage, notifyFetcherSummary } from "../slack/notify";
 
@@ -82,6 +85,114 @@ function testFetcherMessageShape(): void {
   assert(payload.text.includes("8"), "fetcher text should include inserted count");
   assert(serialized.includes("write"), "fetcher payload should include write mode");
   assert(serialized.includes("GitHub run"), "fetcher payload should include GitHub link");
+}
+
+function testFetcherInsertedArticlesMessage(): void {
+  const payload = buildFetcherSummaryMessage({
+    runId: "run1",
+    batchId: "batch-abc",
+    insertedCount: 5,
+    dryRun: false,
+    insertedArticles: [
+      {
+        title: "Fed holds rates steady",
+        sourceName: "AP News US",
+        sourceKey: "apNewsUS",
+        sourceUrl: "https://apnews.com/article/fed-rates",
+      },
+      {
+        title: "Senate passes bill",
+        sourceName: "CBS US",
+        sourceKey: "cbsUS",
+        sourceUrl: "https://cbsnews.com/article/senate-bill",
+      },
+      {
+        title: "Budget outlook shifts",
+        sourceName: "Yahoo Finance",
+        sourceKey: "yahooFinanceNews",
+      },
+    ],
+    sourceBreakdown: "apNewsUS 2, cbsUS 1, yahooFinanceNews 1",
+  });
+
+  const serialized = JSON.stringify(payload);
+  assert(serialized.includes("Inserted articles"), "fetcher payload should include inserted articles section");
+  assert(serialized.includes("Fed holds rates steady"), "fetcher payload should include article title");
+  assert(serialized.includes("apNewsUS"), "fetcher payload should include sourceKey");
+  assert(serialized.includes("AP News US"), "fetcher payload should include sourceName");
+  assert(
+    serialized.includes("<https://apnews.com/article/fed-rates|Fed holds rates steady>"),
+    "fetcher payload should include Slack link when sourceUrl exists"
+  );
+  assert(serialized.includes("Budget outlook shifts"), "fetcher payload should include title without URL");
+  assert(!serialized.includes("<https://example.com|Budget outlook shifts>"), "missing URL should not create link");
+  assert(serialized.includes("By source: apNewsUS 2, cbsUS 1, yahooFinanceNews 1"), "fetcher payload should include source breakdown");
+}
+
+function testFetcherInsertedArticlesCapAndOverflow(): void {
+  const articles = Array.from({ length: 7 }, (_, index) => ({
+    title: `Article ${index + 1}`,
+    sourceKey: "techCrunch",
+  }));
+
+  const section = buildInsertedArticlesSection(articles);
+  assert(section.includes("Article 1"), "section should include first article");
+  assert(section.includes("Article 5"), "section should include fifth article");
+  assert(!section.includes("Article 6"), "section should cap at 5 articles");
+  assert(section.includes("+ 2 more"), "section should show overflow count");
+
+  const payload = buildFetcherSummaryMessage({
+    runId: "run1",
+    batchId: "batch-abc",
+    insertedCount: 7,
+    dryRun: false,
+    insertedArticles: articles,
+  });
+  assert(JSON.stringify(payload).includes("+ 2 more"), "fetcher payload should show + N more");
+}
+
+function testFetcherInsertedArticlesEmpty(): void {
+  const payloadMissing = buildFetcherSummaryMessage({
+    runId: "run1",
+    batchId: "batch-abc",
+    insertedCount: 0,
+    dryRun: false,
+  });
+  const payloadEmpty = buildFetcherSummaryMessage({
+    runId: "run1",
+    batchId: "batch-abc",
+    insertedCount: 0,
+    dryRun: false,
+    insertedArticles: [],
+  });
+
+  assert(
+    !JSON.stringify(payloadMissing).includes("Inserted articles"),
+    "missing insertedArticles should omit section"
+  );
+  assert(!JSON.stringify(payloadEmpty).includes("Inserted articles"), "empty insertedArticles should omit section");
+}
+
+function testFetcherArticlePipeInTitle(): void {
+  const line = formatFetcherArticleLine({
+    title: "A | B",
+    sourceKey: "cbsUS",
+    sourceUrl: "https://cbsnews.com/article/pipe-title",
+  });
+
+  assert(line.includes("│"), "pipe in title should be escaped for Slack link label");
+  assert(!line.includes("|A | B>"), "raw pipe should not break Slack link syntax");
+  assert(escapeSlackMrkdwn("Tom & Jerry <news>") === "Tom &amp; Jerry &lt;news&gt;", "mrkdwn escape should sanitize special chars");
+}
+
+function testFetcherArticleSourceKeyOnly(): void {
+  const line = formatFetcherArticleLine({
+    title: "Plain headline",
+    sourceKey: "techCrunch",
+  });
+
+  assert(line.includes("`techCrunch`"), "sourceKey-only line should include key");
+  assert(!line.includes(" —  — "), "sourceKey-only line should not include empty source name");
 }
 
 function testAiMessageShape(): void {
@@ -238,6 +349,11 @@ async function main(): Promise<void> {
   await testAwaitedNotifyDisabledNoThrow();
   await testAwaitedNotifyMissingWebhookNoThrow();
   testFetcherMessageShape();
+  testFetcherInsertedArticlesMessage();
+  testFetcherInsertedArticlesCapAndOverflow();
+  testFetcherInsertedArticlesEmpty();
+  testFetcherArticlePipeInTitle();
+  testFetcherArticleSourceKeyOnly();
   testAiMessageShape();
   testGunnerMessageShape();
   testGunnerMessageWithoutStudioBaseUrl();

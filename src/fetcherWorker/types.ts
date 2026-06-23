@@ -44,5 +44,6 @@ export interface FetcherRunResult {
     latestBatchJson: string;
   };
   normalizedValidCandidates: NormalizedStoryCandidate[];
+  insertedCandidates: NormalizedStoryCandidate[];
   rejectedCandidates: FetcherRejectedCandidate[];
 }

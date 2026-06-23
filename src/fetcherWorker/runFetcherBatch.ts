@@ -207,6 +207,7 @@ export async function runFetcherBatch(
 
   let duplicateCount = 0;
   let candidatesInserted = 0;
+  let insertedCandidates: NormalizedStoryCandidate[] = [];
   let supabaseUpdated = false;
 
   try {
@@ -217,6 +218,7 @@ export async function runFetcherBatch(
       });
       duplicateCount = insertResult.duplicateCount;
       candidatesInserted = insertResult.insertedCount;
+      insertedCandidates = insertResult.insertedCandidates;
       supabaseUpdated = candidatesInserted > 0;
       await markStoryCandidateBatchFetched(batchId, {
         scrapedCount: boundedRawArticles.length,
@@ -269,6 +271,7 @@ export async function runFetcherBatch(
       latestBatchJson: FETCHER_LATEST_BATCH_PATH,
     },
     normalizedValidCandidates,
+    insertedCandidates,
     rejectedCandidates,
   };
 
