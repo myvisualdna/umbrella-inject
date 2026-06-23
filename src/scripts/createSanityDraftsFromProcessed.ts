@@ -44,6 +44,7 @@ import type {
   GunnerDraftPreviewEntry,
 } from "../gunnerWorker/types";
 import { validateSanityDraftPayload } from "../gunnerWorker/validateSanityDraftPayload";
+import { notifyGunnerRunComplete, notifyStageFailure, resolveRunIdForSlack } from "../slack/pipelineNotify";
 
 const DEFAULT_LIMIT = 1;
 const LARGE_BATCH_THRESHOLD = 5;
@@ -573,6 +574,7 @@ async function main(): Promise<void> {
   };
 
   writeOutputs(summary, previews);
+  await notifyGunnerRunComplete(summary, previews);
 
   console.log("");
   console.log(`Candidates selected:        ${summary.candidatesSelected}`);
@@ -591,6 +593,16 @@ async function main(): Promise<void> {
   if (config.batchId && config.expectedCount !== null && summary.batchCountsReconciled === false) {
     const msg = `Gunner batch ${config.batchId} expected ${config.expectedCount}, got reconcile total ${summary.reconcileTotal}`;
     console.error(msg);
+    await notifyStageFailure({
+      stage: "gunner",
+      runId: resolveRunIdForSlack(),
+      batchId: config.batchId,
+      message: msg,
+      details: [
+        `expectedCount=${config.expectedCount}`,
+        `reconcileTotal=${summary.reconcileTotal ?? "n/a"}`,
+      ],
+    });
     if (!config.dryRun) {
       await markStoryCandidateBatchFailed(config.batchId, msg);
     }
@@ -604,12 +616,19 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error) => {
+main().catch(async (error) => {
   const batchId = process.env.GUNNER_BATCH_ID?.trim();
   const writeEnabled = process.env.GUNNER_WRITE_ENABLED === "true" || process.env.GUNNER_WRITE_ENABLED === "1";
   const dryRun = process.argv.includes("--dry-run") || !writeEnabled;
+  const message = error instanceof Error ? error.message : String(error);
+  await notifyStageFailure({
+    stage: "gunner",
+    runId: resolveRunIdForSlack(),
+    batchId: batchId ?? null,
+    message,
+  });
   if (batchId && !dryRun) {
-    void markStoryCandidateBatchFailed(batchId, error instanceof Error ? error.message : String(error));
+    void markStoryCandidateBatchFailed(batchId, message);
   }
   console.error("Gunner worker failed:", error);
   process.exit(1);

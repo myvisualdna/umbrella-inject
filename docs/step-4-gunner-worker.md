@@ -210,6 +210,7 @@ Written to `audit-output/gunner-worker/`:
 
 ## Step 5 outlook
 
-Step 5 will add human review / Slack notification and the eventual
-draft → publish promotion. That promotion is intentionally out of scope here:
-this worker stops at `draft_created` and never publishes.
+Milestone 1 Slack pipeline notifications are documented in [`slack-integration.md`](./slack-integration.md).
+Future milestones will add interactive review actions and the eventual draft → publish promotion.
+That promotion is intentionally out of scope for the Gunner worker: this worker stops at
+`draft_created` and never publishes.

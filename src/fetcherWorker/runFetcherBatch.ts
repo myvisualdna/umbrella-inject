@@ -14,6 +14,7 @@ import { runSourceScraper } from "../core/scraperDispatch";
 import { canonicalizeUrl, normalizeStoryCandidate } from "../normalization/normalizeStoryCandidate";
 import type { NormalizedStoryCandidate, RawScrapedArticle } from "../normalization/types";
 import { getLatestArticlesFromSource } from "../utils/scraperUtils";
+import { notifyFetcherRunComplete, notifyStageFailure } from "../slack/pipelineNotify";
 import type {
   FetcherRejectedCandidate,
   FetcherRunOptions,
@@ -235,6 +236,12 @@ export async function runFetcherBatch(
       const message = error instanceof Error ? error.message : String(error);
       await markStoryCandidateBatchFailed(batchId, message);
     }
+    await notifyStageFailure({
+      stage: "fetcher",
+      runId: run.id,
+      batchId,
+      message: error instanceof Error ? error.message : String(error),
+    });
     throw error;
   }
 
@@ -266,6 +273,7 @@ export async function runFetcherBatch(
   };
 
   writeAuditReport(result);
+  await notifyFetcherRunComplete(result);
   logger.info(`✅ Fetcher Worker run finished: ${run.id}`, {
     scrapedArticles: result.scrapedArticlesCount,
     normalizedValid: result.normalizedValidCount,
