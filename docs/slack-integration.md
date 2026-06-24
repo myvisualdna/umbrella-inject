@@ -31,6 +31,8 @@ Not included (future milestones):
 | `ANGLE_STUDIO_BASE_URL` | No | — | Base URL for Sanity Studio draft links |
 | `ANGLE_SITE_BASE_URL` | No | — | Reserved for future site links |
 | `GITHUB_RUN_URL` | No | — | Link to the GitHub Actions run |
+| `SLACK_ARTICLE_NOTIFICATIONS_ENABLED` | No | `false` | Send per-article JSON messages after Fetcher summary |
+| `SLACK_ARTICLE_NOTIFICATION_LIMIT` | No | `10` | Max per-article Slack messages per Fetcher run |
 
 Example `.env` (local):
 
@@ -38,6 +40,8 @@ Example `.env` (local):
 SLACK_NOTIFICATIONS_ENABLED=false
 SLACK_WEBHOOK_URL=
 SLACK_CHANNEL_NAME=#angle-pipeline
+SLACK_ARTICLE_NOTIFICATIONS_ENABLED=false
+SLACK_ARTICLE_NOTIFICATION_LIMIT=10
 ANGLE_STUDIO_BASE_URL=https://your-site.com/studio
 ANGLE_SITE_BASE_URL=https://your-site.com
 GITHUB_RUN_URL=
@@ -57,6 +61,7 @@ The webhook URL determines the destination channel. `SLACK_CHANNEL_NAME` is only
 | Event | Stage | When |
 | --- | --- | --- |
 | Fetcher summary | `fetcher` | After audit report is written |
+| Fetcher per-article JSON | `fetcher` | After summary, when `SLACK_ARTICLE_NOTIFICATIONS_ENABLED=true` (up to limit) |
 | AI summary | `ai` | After AI worker outputs are written |
 | Gunner summary | `gunner` | After Gunner outputs are written (includes up to 5 Studio links) |
 | Batch validation failure | `ai` / `gunner` | Strict batch count reconciliation fails |
@@ -68,6 +73,17 @@ The webhook URL determines the destination channel. `SLACK_CHANNEL_NAME` is only
 - **Enabled but missing webhook:** A warning is logged; the pipeline continues. The webhook URL is never logged in full.
 - **Webhook errors (non-2xx, timeout, network):** Logged as warnings; the pipeline is not failed.
 - **No secrets in logs:** Webhook URLs are redacted in log output.
+
+## Per-article Fetcher notifications (optional)
+
+When `SLACK_ARTICLE_NOTIFICATIONS_ENABLED=true` (and the master Slack switch + webhook are set), the Fetcher sends one Slack message per newly inserted `story_candidates` row after the batch summary. Messages include schema-accurate JSON with the full `body` (no truncation). Internal fields (`raw_payload`, `openai_response`, `processed_payload`) are never included.
+
+- Default: **off** (`SLACK_ARTICLE_NOTIFICATIONS_ENABLED=false`)
+- Default limit: **10** messages per run (`SLACK_ARTICLE_NOTIFICATION_LIMIT`)
+- Summary notification remains the primary signal; per-article messages are noisy and intended for debugging or monitoring
+- Very long article bodies may exceed Slack block size limits; failures are logged and non-fatal
+
+Enable in GitHub Actions by setting repository variables `SLACK_ARTICLE_NOTIFICATIONS_ENABLED` and optionally `SLACK_ARTICLE_NOTIFICATION_LIMIT` on fetcher workflows only.
 
 ## Verification
 
@@ -93,6 +109,7 @@ To enable Slack in CI, also set `SLACK_NOTIFICATIONS_ENABLED=true` and provide `
 - [`src/slack/config.ts`](../src/slack/config.ts) — env parsing
 - [`src/slack/types.ts`](../src/slack/types.ts) — payload types
 - [`src/slack/messages.ts`](../src/slack/messages.ts) — Block Kit message builders (pure)
+- [`src/slack/storyCandidateSlack.ts`](../src/slack/storyCandidateSlack.ts) — per-article JSON serializer and message builder
 - [`src/slack/notify.ts`](../src/slack/notify.ts) — webhook POST (optional)
 - [`src/slack/pipelineNotify.ts`](../src/slack/pipelineNotify.ts) — worker adapters
 

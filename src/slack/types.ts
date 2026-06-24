@@ -1,5 +1,13 @@
 export type SlackPipelineStage = "fetcher" | "ai" | "gunner" | "pipeline";
 
+export type SlackFetcherInsertedArticle = {
+  title: string;
+  sourceKey?: string;
+  sourceName?: string;
+  sourceUrl?: string;
+  category?: string;
+};
+
 export type SlackFetcherSummary = {
   runId: string;
   batchId: string | null;
@@ -8,6 +16,8 @@ export type SlackFetcherSummary = {
   failedCount?: number;
   sourceCount?: number;
   dryRun: boolean;
+  insertedArticles?: SlackFetcherInsertedArticle[];
+  sourceBreakdown?: string;
 };
 
 export type SlackAiSummary = {
@@ -52,4 +62,25 @@ export type SlackWebhookPayload = {
 export type SlackMessageContext = {
   channelName?: string;
   githubRunUrl?: string;
+};
+
+export type SlackStoryCandidateNotification = {
+  id?: string;
+  source_key: string;
+  source_name: string;
+  source_url: string;
+  title: string;
+  excerpt?: string | null;
+  body: string;
+  category: string;
+  published_at?: string | null;
+  scraped_at?: string;
+  status?: string;
+  attempt_count?: number;
+  last_error?: string | null;
+  sanity_document_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  ingestion_batch_id?: string | null;
+  ingestion_run_id?: string | null;
 };

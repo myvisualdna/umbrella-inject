@@ -1,6 +1,7 @@
 import type {
   SlackAiSummary,
   SlackFailureAlert,
+  SlackFetcherInsertedArticle,
   SlackFetcherSummary,
   SlackGunnerSummary,
   SlackMessageContext,
@@ -8,6 +9,8 @@ import type {
 } from "./types";
 
 type SlackBlock = Record<string, unknown>;
+
+const MAX_FETCHER_INSERTED_ARTICLES = 5;
 
 function formatBatchId(batchId: string | null | undefined): string {
   return batchId ?? "none";
@@ -67,6 +70,46 @@ export function buildSanityStudioUrl(
   return `${base}/structure/post;${documentId}`;
 }
 
+export function escapeSlackMrkdwn(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\|/g, "│");
+}
+
+function formatFetcherArticleSourceSuffix(article: SlackFetcherInsertedArticle): string {
+  const sourceKey = article.sourceKey?.trim();
+  const sourceName = article.sourceName?.trim();
+
+  if (sourceName && sourceKey) {
+    return ` — ${escapeSlackMrkdwn(sourceName)} (\`${sourceKey}\`)`;
+  }
+  if (sourceKey) {
+    return ` — \`${sourceKey}\``;
+  }
+  return "";
+}
+
+export function formatFetcherArticleLine(article: SlackFetcherInsertedArticle): string {
+  const title = article.title?.trim() || "Untitled";
+  const escapedTitle = escapeSlackMrkdwn(title);
+  const sourceUrl = article.sourceUrl?.trim();
+  const sourceSuffix = formatFetcherArticleSourceSuffix(article);
+  const titleText = sourceUrl ? `<${sourceUrl}|${escapedTitle}>` : escapedTitle;
+  return `• ${titleText}${sourceSuffix}`;
+}
+
+export function buildInsertedArticlesSection(articles: SlackFetcherInsertedArticle[]): string {
+  const preview = articles.slice(0, MAX_FETCHER_INSERTED_ARTICLES);
+  const lines = preview.map((article) => formatFetcherArticleLine(article));
+  const remaining = articles.length - preview.length;
+  if (remaining > 0) {
+    lines.push(`+ ${remaining} more`);
+  }
+  return lines.join("\n");
+}
+
 export function buildFetcherSummaryMessage(
   summary: SlackFetcherSummary,
   context?: SlackMessageContext
@@ -74,7 +117,11 @@ export function buildFetcherSummaryMessage(
   const runId = formatRunId(summary.runId);
   const batchId = formatBatchId(summary.batchId);
   const mode = formatMode(summary.dryRun);
-  const text = `Fetcher complete — ${runId} batch ${batchId}: ${summary.insertedCount} inserted (${mode})`;
+  const insertedArticles = summary.insertedArticles ?? [];
+  const firstTitle = insertedArticles[0]?.title?.trim();
+  const text = firstTitle
+    ? `Fetcher complete — ${runId} batch ${batchId}: ${summary.insertedCount} inserted (${mode}); ${firstTitle}`
+    : `Fetcher complete — ${runId} batch ${batchId}: ${summary.insertedCount} inserted (${mode})`;
 
   const blocks: SlackBlock[] = [
     {
@@ -100,6 +147,23 @@ export function buildFetcherSummaryMessage(
 
   if (summary.failedCount !== undefined) {
     blocks.push(fieldBlock("Failed", String(summary.failedCount)));
+  }
+
+  if (insertedArticles.length > 0) {
+    blocks.push({
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `*Inserted articles*\n${buildInsertedArticlesSection(insertedArticles)}`,
+      },
+    });
+  }
+
+  if (summary.sourceBreakdown) {
+    blocks.push({
+      type: "context",
+      elements: [{ type: "mrkdwn", text: `By source: ${summary.sourceBreakdown}` }],
+    });
   }
 
   appendContextBlocks(blocks, context);
