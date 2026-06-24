@@ -45,12 +45,37 @@ export interface InsertFailure {
   reason: string;
 }
 
+const STORY_CANDIDATE_SLACK_COLUMNS =
+  "id, source_key, source_name, source_url, title, excerpt, body, category, published_at, scraped_at, status, attempt_count, last_error, sanity_document_id, created_at, updated_at, ingestion_batch_id, ingestion_run_id";
+
+export interface SavedStoryCandidateRow {
+  id: string;
+  source_key: string;
+  source_name: string;
+  source_url: string;
+  title: string;
+  excerpt: string | null;
+  body: string;
+  category: string;
+  published_at: string | null;
+  scraped_at: string;
+  status: string;
+  attempt_count: number;
+  last_error: string | null;
+  sanity_document_id: string | null;
+  created_at: string;
+  updated_at: string;
+  ingestion_batch_id: string | null;
+  ingestion_run_id: string | null;
+}
+
 export interface InsertStoryCandidatesResult {
   insertedCount: number;
   duplicateCount: number;
   failedCount: number;
   failed: InsertFailure[];
   insertedCandidates: NormalizedStoryCandidate[];
+  insertedStoryCandidateRows: SavedStoryCandidateRow[];
 }
 
 export interface InsertStoryCandidatesOptions {
@@ -222,6 +247,7 @@ export async function insertStoryCandidates(
       failedCount: 0,
       failed: [],
       insertedCandidates: [],
+      insertedStoryCandidateRows: [],
     };
   }
 
@@ -245,6 +271,7 @@ export async function insertStoryCandidates(
         reason: error.message,
       })),
       insertedCandidates: [],
+      insertedStoryCandidateRows: [],
     };
   }
 
@@ -252,6 +279,7 @@ export async function insertStoryCandidates(
   let insertedCount = 0;
   let duplicateCount = 0;
   const insertedCandidates: NormalizedStoryCandidate[] = [];
+  const insertedUrls: string[] = [];
 
   for (let index = 0; index < sourceUrls.length; index += 1) {
     const url = sourceUrls[index];
@@ -261,9 +289,29 @@ export async function insertStoryCandidates(
     if (!existed && existsNow) {
       insertedCount += 1;
       insertedCandidates.push(candidates[index]);
+      insertedUrls.push(url);
     } else {
       duplicateCount += 1;
     }
+  }
+
+  let insertedStoryCandidateRows: SavedStoryCandidateRow[] = [];
+  if (insertedUrls.length > 0) {
+    const { data, error: selectError } = await supabase
+      .from("story_candidates")
+      .select(STORY_CANDIDATE_SLACK_COLUMNS)
+      .in("source_url", insertedUrls);
+
+    if (selectError) {
+      throw new Error(`Failed to load inserted candidates: ${selectError.message}`);
+    }
+
+    const rowsByUrl = new Map(
+      (data ?? []).map((row) => [row.source_url as string, row as SavedStoryCandidateRow])
+    );
+    insertedStoryCandidateRows = insertedUrls
+      .map((url) => rowsByUrl.get(url))
+      .filter((row): row is SavedStoryCandidateRow => row !== undefined);
   }
 
   return {
@@ -272,6 +320,7 @@ export async function insertStoryCandidates(
     failedCount: 0,
     failed: [],
     insertedCandidates,
+    insertedStoryCandidateRows,
   };
 }
 

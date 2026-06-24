@@ -5,6 +5,8 @@ export interface SlackConfig {
   studioBaseUrl: string | undefined;
   siteBaseUrl: string | undefined;
   githubRunUrl: string | undefined;
+  articleNotificationsEnabled: boolean;
+  articleNotificationLimit: number;
 }
 
 function parseOptionalString(value: string | undefined): string | undefined {
@@ -20,6 +22,13 @@ export function parseSlackBooleanEnv(value: string | undefined, fallback: boolea
   return fallback;
 }
 
+export function parsePositiveIntEnv(value: string | undefined, fallback: number): number {
+  if (value === undefined) return fallback;
+  const parsed = Number.parseInt(value.trim(), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return parsed;
+}
+
 export function getSlackConfigFromEnv(env: NodeJS.ProcessEnv = process.env): SlackConfig {
   return {
     enabled: parseSlackBooleanEnv(env.SLACK_NOTIFICATIONS_ENABLED, false),
@@ -28,11 +37,17 @@ export function getSlackConfigFromEnv(env: NodeJS.ProcessEnv = process.env): Sla
     studioBaseUrl: parseOptionalString(env.ANGLE_STUDIO_BASE_URL),
     siteBaseUrl: parseOptionalString(env.ANGLE_SITE_BASE_URL),
     githubRunUrl: parseOptionalString(env.GITHUB_RUN_URL),
+    articleNotificationsEnabled: parseSlackBooleanEnv(env.SLACK_ARTICLE_NOTIFICATIONS_ENABLED, false),
+    articleNotificationLimit: parsePositiveIntEnv(env.SLACK_ARTICLE_NOTIFICATION_LIMIT, 10),
   };
 }
 
 export function isSlackReady(config: SlackConfig): boolean {
   return config.enabled && Boolean(config.webhookUrl);
+}
+
+export function isSlackArticleNotificationsReady(config: SlackConfig): boolean {
+  return config.enabled && config.articleNotificationsEnabled && Boolean(config.webhookUrl);
 }
 
 export function redactWebhookUrl(url: string): string {

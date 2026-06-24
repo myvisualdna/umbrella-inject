@@ -1,10 +1,12 @@
 import { logger } from "../config/logger";
+import type { SavedStoryCandidateRow } from "../db/storyCandidates";
 import type { FetcherRunResult } from "../fetcherWorker/types";
 import type { NormalizedStoryCandidate } from "../normalization/types";
 import type { GunnerDraftPreviewEntry } from "../gunnerWorker/types";
-import { getSlackConfigFromEnv } from "./config";
+import { getSlackConfigFromEnv, isSlackArticleNotificationsReady } from "./config";
 import { buildSanityStudioUrl } from "./messages";
-import { notifyAiSummary, notifyFailure, notifyFetcherSummary, notifyGunnerSummary } from "./notify";
+import { notifyAiSummary, notifyFailure, notifyFetcherSummary, notifyGunnerSummary, postSlackMessage, type SlackNotifyDeps } from "./notify";
+import { buildStoryCandidateSavedMessage, toSlackStoryCandidateNotification } from "./storyCandidateSlack";
 import type { SlackFailureAlert, SlackGunnerDraftLink } from "./types";
 
 function formatNotifyError(error: unknown): string {
@@ -55,6 +57,40 @@ export async function notifyFetcherRunComplete(result: FetcherRunResult): Promis
     });
   } catch (error) {
     logger.warn("Slack fetcher notification failed", { error: formatNotifyError(error) });
+  }
+}
+
+export async function notifyStoryCandidatesSaved(
+  rows: SavedStoryCandidateRow[],
+  deps: SlackNotifyDeps = {}
+): Promise<void> {
+  try {
+    const config = deps.config ?? getSlackConfigFromEnv();
+    if (!isSlackArticleNotificationsReady(config)) {
+      return;
+    }
+
+    if (rows.length === 0) {
+      return;
+    }
+
+    const limit = config.articleNotificationLimit;
+    if (rows.length > limit) {
+      logger.warn("Slack article notifications capped", {
+        total: rows.length,
+        limit,
+        omitted: rows.length - limit,
+      });
+    }
+
+    const rowsToNotify = rows.slice(0, limit);
+    for (const row of rowsToNotify) {
+      const notification = toSlackStoryCandidateNotification(row);
+      const payload = buildStoryCandidateSavedMessage(notification);
+      await postSlackMessage(payload, { ...deps, config });
+    }
+  } catch (error) {
+    logger.warn("Slack article notification failed", { error: formatNotifyError(error) });
   }
 }
 

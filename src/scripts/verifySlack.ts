@@ -2,7 +2,7 @@
  * Offline Slack notification verification (no webhook calls, no network).
  */
 
-import { getSlackConfigFromEnv, isSlackReady, parseSlackBooleanEnv, redactWebhookUrl } from "../slack/config";
+import { getSlackConfigFromEnv, isSlackArticleNotificationsReady, isSlackReady, parsePositiveIntEnv, parseSlackBooleanEnv, redactWebhookUrl } from "../slack/config";
 import {
   buildAiSummaryMessage,
   buildFailureMessage,
@@ -13,7 +13,10 @@ import {
   escapeSlackMrkdwn,
   formatFetcherArticleLine,
 } from "../slack/messages";
+import { notifyStoryCandidatesSaved } from "../slack/pipelineNotify";
 import { postSlackMessage, notifyFetcherSummary } from "../slack/notify";
+import { buildStoryCandidateSavedMessage, toSlackStoryCandidateNotification } from "../slack/storyCandidateSlack";
+import type { SavedStoryCandidateRow } from "../db/storyCandidates";
 
 const WEBHOOK_URL = "https://hooks.slack.com/services/T000/B000/secret-token";
 
@@ -30,6 +33,159 @@ function testBooleanParsing(): void {
   assert(parseSlackBooleanEnv("1", false) === true, "1 should enable");
   assert(parseSlackBooleanEnv("false", true) === false, "false should disable");
   assert(parseSlackBooleanEnv("0", true) === false, "0 should disable");
+}
+
+function testPositiveIntParsing(): void {
+  assert(parsePositiveIntEnv(undefined, 10) === 10, "undefined should use fallback");
+  assert(parsePositiveIntEnv("10", 5) === 10, "valid positive int should parse");
+  assert(parsePositiveIntEnv("0", 10) === 10, "zero should use fallback");
+  assert(parsePositiveIntEnv("-3", 10) === 10, "negative should use fallback");
+  assert(parsePositiveIntEnv("abc", 10) === 10, "invalid should use fallback");
+}
+
+function makeSavedStoryCandidateRow(overrides: Partial<SavedStoryCandidateRow> = {}): SavedStoryCandidateRow {
+  return {
+    id: "uuid-1",
+    source_key: "apNewsUS",
+    source_name: "AP News US",
+    source_url: "https://apnews.com/article/fed-rates",
+    title: "Fed holds rates steady",
+    excerpt: "The Fed left rates unchanged.",
+    body: "Full article body text.",
+    category: "us",
+    published_at: "2026-06-19T12:00:00.000Z",
+    scraped_at: "2026-06-19T12:05:00.000Z",
+    status: "pending",
+    attempt_count: 0,
+    last_error: null,
+    sanity_document_id: null,
+    created_at: "2026-06-19T12:05:01.000Z",
+    updated_at: "2026-06-19T12:05:01.000Z",
+    ingestion_batch_id: "batch-abc",
+    ingestion_run_id: "run1",
+    ...overrides,
+  };
+}
+
+async function testArticleNotificationsDisabledByDefault(): Promise<void> {
+  const config = getSlackConfigFromEnv({
+    SLACK_NOTIFICATIONS_ENABLED: "true",
+    SLACK_WEBHOOK_URL: WEBHOOK_URL,
+  });
+  assert(!config.articleNotificationsEnabled, "article notifications should be disabled by default");
+  assert(!isSlackArticleNotificationsReady(config), "article notifications should not be ready by default");
+
+  let fetchCalls = 0;
+  const fetchImpl = async () => {
+    fetchCalls += 1;
+    return new Response(null, { status: 200 });
+  };
+
+  await notifyStoryCandidatesSaved([makeSavedStoryCandidateRow()], { config, fetchImpl });
+  assert(fetchCalls === 0, "disabled article notifications should not call fetch");
+}
+
+async function testArticleNotificationsEnabledPerRow(): Promise<void> {
+  const config = getSlackConfigFromEnv({
+    SLACK_NOTIFICATIONS_ENABLED: "true",
+    SLACK_ARTICLE_NOTIFICATIONS_ENABLED: "true",
+    SLACK_WEBHOOK_URL: WEBHOOK_URL,
+  });
+  assert(isSlackArticleNotificationsReady(config), "article notifications should be ready when enabled");
+
+  let fetchCalls = 0;
+  const fetchImpl = async () => {
+    fetchCalls += 1;
+    return new Response(null, { status: 200 });
+  };
+
+  const rows = [
+    makeSavedStoryCandidateRow({ id: "uuid-1", title: "Article One" }),
+    makeSavedStoryCandidateRow({ id: "uuid-2", title: "Article Two", source_url: "https://example.com/two" }),
+  ];
+
+  await notifyStoryCandidatesSaved(rows, { config, fetchImpl });
+  assert(fetchCalls === 2, "enabled article notifications should call fetch once per row");
+}
+
+async function testArticleNotificationsLimitCap(): Promise<void> {
+  const config = getSlackConfigFromEnv({
+    SLACK_NOTIFICATIONS_ENABLED: "true",
+    SLACK_ARTICLE_NOTIFICATIONS_ENABLED: "true",
+    SLACK_ARTICLE_NOTIFICATION_LIMIT: "10",
+    SLACK_WEBHOOK_URL: WEBHOOK_URL,
+  });
+
+  let fetchCalls = 0;
+  const fetchImpl = async () => {
+    fetchCalls += 1;
+    return new Response(null, { status: 200 });
+  };
+
+  const rows = Array.from({ length: 12 }, (_, index) =>
+    makeSavedStoryCandidateRow({
+      id: `uuid-${index + 1}`,
+      source_url: `https://example.com/article-${index + 1}`,
+      title: `Article ${index + 1}`,
+    })
+  );
+
+  await notifyStoryCandidatesSaved(rows, { config, fetchImpl });
+  assert(fetchCalls === 10, "article notifications should cap at limit of 10");
+}
+
+function testSerializerFullBodyAndExclusions(): void {
+  const longBody = "x".repeat(5000);
+  const row = makeSavedStoryCandidateRow({
+    body: longBody,
+    raw_payload: { secret: true },
+    openai_response: { model: "gpt" },
+    processed_payload: { draft: true },
+  } as SavedStoryCandidateRow & {
+    raw_payload?: unknown;
+    openai_response?: unknown;
+    processed_payload?: unknown;
+  });
+
+  const notification = toSlackStoryCandidateNotification(row);
+  assert(notification.body === longBody, "serializer should include full body without truncation");
+  assert(notification.id === "uuid-1", "serializer should include id");
+  assert(notification.source_key === "apNewsUS", "serializer should include source_key");
+  assert(notification.ingestion_batch_id === "batch-abc", "serializer should include ingestion_batch_id");
+
+  const serialized = JSON.stringify(notification);
+  assert(!serialized.includes("raw_payload"), "serializer should exclude raw_payload");
+  assert(!serialized.includes("openai_response"), "serializer should exclude openai_response");
+  assert(!serialized.includes("processed_payload"), "serializer should exclude processed_payload");
+  assert(!serialized.includes("body_length"), "serializer should exclude body_length");
+  assert(!serialized.includes("body_truncated"), "serializer should exclude body_truncated");
+}
+
+function testBuildStoryCandidateSavedMessageShape(): void {
+  const payload = buildStoryCandidateSavedMessage(toSlackStoryCandidateNotification(makeSavedStoryCandidateRow()));
+  const serialized = JSON.stringify(payload);
+
+  assert(payload.text.includes("Fed holds rates steady"), "text fallback should include title");
+  assert(serialized.includes("Saved article candidate"), "payload should include heading");
+  assert(serialized.includes("AP News US"), "payload should include origin source name");
+  assert(serialized.includes("apNewsUS"), "payload should include source key");
+  assert(serialized.includes("```json"), "payload should include JSON code block");
+  assert(serialized.includes("Full article body text."), "payload JSON should include body");
+  assert(
+    serialized.includes("<https://apnews.com/article/fed-rates|Fed holds rates steady>"),
+    "payload should include Slack link for title"
+  );
+}
+
+async function testArticleNotificationFetchFailureNoThrow(): Promise<void> {
+  const config = getSlackConfigFromEnv({
+    SLACK_NOTIFICATIONS_ENABLED: "true",
+    SLACK_ARTICLE_NOTIFICATIONS_ENABLED: "true",
+    SLACK_WEBHOOK_URL: WEBHOOK_URL,
+  });
+
+  const fetchImpl = async () => new Response("error", { status: 500 });
+  await notifyStoryCandidatesSaved([makeSavedStoryCandidateRow()], { config, fetchImpl });
 }
 
 async function testConfigDisabledNoOp(): Promise<void> {
@@ -344,10 +500,17 @@ function testGunnerMessageWithoutStudioBaseUrl(): void {
 
 async function main(): Promise<void> {
   testBooleanParsing();
+  testPositiveIntParsing();
   await testConfigDisabledNoOp();
   await testMissingWebhookNoOp();
   await testAwaitedNotifyDisabledNoThrow();
   await testAwaitedNotifyMissingWebhookNoThrow();
+  await testArticleNotificationsDisabledByDefault();
+  await testArticleNotificationsEnabledPerRow();
+  await testArticleNotificationsLimitCap();
+  testSerializerFullBodyAndExclusions();
+  testBuildStoryCandidateSavedMessageShape();
+  await testArticleNotificationFetchFailureNoThrow();
   testFetcherMessageShape();
   testFetcherInsertedArticlesMessage();
   testFetcherInsertedArticlesCapAndOverflow();

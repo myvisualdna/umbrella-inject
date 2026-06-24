@@ -1,4 +1,5 @@
 import type { RunConfig, SourceKey } from "../config/scrapingControl";
+import type { SavedStoryCandidateRow } from "../db/storyCandidates";
 import type { NormalizedStoryCandidate } from "../normalization/types";
 
 export interface FetcherRunOptions {
@@ -45,5 +46,6 @@ export interface FetcherRunResult {
   };
   normalizedValidCandidates: NormalizedStoryCandidate[];
   insertedCandidates: NormalizedStoryCandidate[];
+  insertedStoryCandidateRows: SavedStoryCandidateRow[];
   rejectedCandidates: FetcherRejectedCandidate[];
 }

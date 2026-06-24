@@ -3,7 +3,7 @@ import * as path from "path";
 import { logger } from "../config/logger";
 import type { RunConfig, SourceKey } from "../config/scrapingControl";
 import { isScraperEnabled } from "../config/scraperSwitches";
-import { getExistingSourceUrls, insertStoryCandidates, validateForInsert } from "../db/storyCandidates";
+import { getExistingSourceUrls, insertStoryCandidates, validateForInsert, type SavedStoryCandidateRow } from "../db/storyCandidates";
 import {
   createStoryCandidateBatch,
   markStoryCandidateBatchFailed,
@@ -14,7 +14,7 @@ import { runSourceScraper } from "../core/scraperDispatch";
 import { canonicalizeUrl, normalizeStoryCandidate } from "../normalization/normalizeStoryCandidate";
 import type { NormalizedStoryCandidate, RawScrapedArticle } from "../normalization/types";
 import { getLatestArticlesFromSource } from "../utils/scraperUtils";
-import { notifyFetcherRunComplete, notifyStageFailure } from "../slack/pipelineNotify";
+import { notifyFetcherRunComplete, notifyStageFailure, notifyStoryCandidatesSaved } from "../slack/pipelineNotify";
 import type {
   FetcherRejectedCandidate,
   FetcherRunOptions,
@@ -208,6 +208,7 @@ export async function runFetcherBatch(
   let duplicateCount = 0;
   let candidatesInserted = 0;
   let insertedCandidates: NormalizedStoryCandidate[] = [];
+  let insertedStoryCandidateRows: SavedStoryCandidateRow[] = [];
   let supabaseUpdated = false;
 
   try {
@@ -219,6 +220,7 @@ export async function runFetcherBatch(
       duplicateCount = insertResult.duplicateCount;
       candidatesInserted = insertResult.insertedCount;
       insertedCandidates = insertResult.insertedCandidates;
+      insertedStoryCandidateRows = insertResult.insertedStoryCandidateRows;
       supabaseUpdated = candidatesInserted > 0;
       await markStoryCandidateBatchFetched(batchId, {
         scrapedCount: boundedRawArticles.length,
@@ -272,11 +274,13 @@ export async function runFetcherBatch(
     },
     normalizedValidCandidates,
     insertedCandidates,
+    insertedStoryCandidateRows,
     rejectedCandidates,
   };
 
   writeAuditReport(result);
   await notifyFetcherRunComplete(result);
+  await notifyStoryCandidatesSaved(result.insertedStoryCandidateRows);
   logger.info(`✅ Fetcher Worker run finished: ${run.id}`, {
     scrapedArticles: result.scrapedArticlesCount,
     normalizedValid: result.normalizedValidCount,

@@ -63,3 +63,24 @@ export type SlackMessageContext = {
   channelName?: string;
   githubRunUrl?: string;
 };
+
+export type SlackStoryCandidateNotification = {
+  id?: string;
+  source_key: string;
+  source_name: string;
+  source_url: string;
+  title: string;
+  excerpt?: string | null;
+  body: string;
+  category: string;
+  published_at?: string | null;
+  scraped_at?: string;
+  status?: string;
+  attempt_count?: number;
+  last_error?: string | null;
+  sanity_document_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  ingestion_batch_id?: string | null;
+  ingestion_run_id?: string | null;
+};
